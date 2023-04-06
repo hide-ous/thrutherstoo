@@ -1,6 +1,10 @@
 trutherstoo
 ==============================
 
+steps:
+1. create a virtualenv and install dependencies
+2. install [riveter](https://github.com/maartensap/riveter-nlp/)
+
 investigating the use of conspiracy theorist as an identity label
 
 Project Organization
