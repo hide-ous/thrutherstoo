@@ -49,7 +49,7 @@ def read_zst(fpath):
                 print(e)
 
 
-def parse_files():
+def parse_files(output_dir):
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
 
@@ -73,7 +73,8 @@ def parse_files():
     contribution_fpaths = [i for i in contribution_fpaths if os.path.exists(i)]
 
     for infile in contribution_fpaths:
-        outfile = infile[:-len('.zst')] + '_labeling.zst'
+        outfile = os.path.split(infile)[-1][:-len('.zst')] + '_labeling.jsonl'
+        outfile = os.path.join(output_dir, outfile)
         text_field = "selftext" if "RS" in infile else "body"
         main(input_filepath=infile, output_filepath=outfile,
              text_field=text_field)
@@ -92,8 +93,9 @@ if __name__ == '__main__':
     # infile = os.path.join(project_dir, 'data', 'external', 'RC_2009-09.zst')
     # outfile = os.path.join(project_dir, 'data', 'interim', 'RC_2009-09.jsonl')
     # main(input_filepath=infile, output_filepath=outfile)
+    parse_files(project_dir)
 
-    outfile = os.path.join(project_dir, 'data', 'interim',
-                           'labeling_contributions.jsonl')
-    search_pushshift(store_path=outfile,
-                     q='''conspiracist|conspiracists|"conspiracy theorist"|"conspiracy theorists"''')
+    # outfile = os.path.join(project_dir, 'data', 'interim',
+    #                        'labeling_contributions.jsonl')
+    # search_pushshift(store_path=outfile,
+    #                  q='''conspiracist|conspiracists|"conspiracy theorist"|"conspiracy theorists"''')
