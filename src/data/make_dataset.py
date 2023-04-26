@@ -247,6 +247,7 @@ if __name__ == '__main__':
     # infile = os.path.join(project_dir, 'data', 'external', 'RC_2009-09.zst')
     # outfile = os.path.join(project_dir, 'data', 'interim', 'RC_2009-09.jsonl')
     # main(input_filepath=infile, output_filepath=outfile)
+
     # parse_files(os.path.join(project_dir, 'data', 'interim'))
     interim_dir = os.path.join(project_dir, 'data', 'interim')
     labeling_fpath = os.path.join(project_dir, 'data', 'interim',
