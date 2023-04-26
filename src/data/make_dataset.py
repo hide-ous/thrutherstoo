@@ -4,7 +4,6 @@ import os.path
 import re
 from json import JSONDecodeError
 
-import click
 import logging
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
@@ -25,6 +24,7 @@ def main(input_filepath, output_filepath, text_field='body'):
     """
     logger = logging.getLogger(__name__)
     logger.info('making final data set from raw data')
+    logger.info(f'{input_filepath} to {output_filepath}')
     with open(output_filepath, 'a+', encoding='utf8') as f:
         for contribution in read_zst(input_filepath):
             text = contribution[text_field]
