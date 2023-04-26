@@ -94,9 +94,7 @@ def filter_instances_(args):
 
 def filter_instances(input_filepath, output_filepath, filter_field,
                      filter_values):
-    """ Runs data processing scripts to turn raw data from (../raw) into
-        cleaned data ready to be analyzed (saved in ../processed).
-    """
+
     logger = logging.getLogger(__name__)
     logger.info('making final data set from raw data')
     logger.info(f'{input_filepath} to {output_filepath}')
@@ -193,7 +191,6 @@ class AlgorithmL:
             if self.counter == self.next:
                 self.reservoir[np.random.randint(0, self.k)] = item
                 self.skip()
-                print(self.counter,self.next, self.w)
         self.counter += 1
 
     def skip(self):
@@ -202,9 +199,7 @@ class AlgorithmL:
         self.w *= np.exp(np.log(np.random.random()) / self.k)
 
 def sample_instances(input_filepath, output_filepath, k):
-    """ Runs data processing scripts to turn raw data from (../raw) into
-        cleaned data ready to be analyzed (saved in ../processed).
-    """
+
     logger = logging.getLogger(__name__)
     logger.info('making final data set from raw data')
     logger.info(f'{input_filepath} to {output_filepath}')
