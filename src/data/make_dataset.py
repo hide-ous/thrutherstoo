@@ -5,6 +5,7 @@ import re
 from json import JSONDecodeError
 
 import logging
+from multiprocessing import Pool
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
 import zstandard as zstd
@@ -48,7 +49,8 @@ def read_zst(fpath):
                 print(f"error in {fpath}")
                 print(e)
 
-
+def main_(args):
+    return main(*args)
 def parse_files(output_dir):
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
@@ -72,12 +74,17 @@ def parse_files(output_dir):
                                          for month in range(1, 13)]]
     contribution_fpaths = [i for i in contribution_fpaths if os.path.exists(i)]
 
-    for infile in contribution_fpaths:
-        outfile = os.path.split(infile)[-1][:-len('.zst')] + '_labeling.jsonl'
-        outfile = os.path.join(output_dir, outfile)
-        text_field = "selftext" if "RS" in infile else "body"
-        main(input_filepath=infile, output_filepath=outfile,
-             text_field=text_field)
+    with Pool(40) as pool:
+        args= list()
+        for infile in contribution_fpaths:
+            outfile = os.path.split(infile)[-1][:-len('.zst')] + '_labeling.jsonl'
+            outfile = os.path.join(output_dir, outfile)
+            text_field = "selftext" if "RS" in infile else "body"
+            args.append((infile, outfile, text_field))
+            # main(input_filepath=infile, output_filepath=outfile,
+            #      text_field=text_field)
+        pool.map(main_, args)
+        pool.join()
 
 
 if __name__ == '__main__':
@@ -93,7 +100,7 @@ if __name__ == '__main__':
     # infile = os.path.join(project_dir, 'data', 'external', 'RC_2009-09.zst')
     # outfile = os.path.join(project_dir, 'data', 'interim', 'RC_2009-09.jsonl')
     # main(input_filepath=infile, output_filepath=outfile)
-    parse_files(project_dir)
+    parse_files(os.path.join(project_dir, 'data', 'interim'))
 
     # outfile = os.path.join(project_dir, 'data', 'interim',
     #                        'labeling_contributions.jsonl')
