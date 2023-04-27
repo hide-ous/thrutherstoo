@@ -93,7 +93,7 @@ def consolidate_files(input_dir, output_fpath, file_suffix):
                 with open(os.path.join(input_dir, infpath), encoding='utf8') as inf:
                     for l in map(json.loads, inf):
                         l['name'] = contribution_prefix+l['id']
-                        f.write(l)
+                        f.write(json.dumps(l)+'\n')
 
 
 def filter_instances_(args):
