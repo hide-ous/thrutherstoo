@@ -83,7 +83,7 @@ def consolidate_files(input_dir, output_fpath, file_suffix):
     with open(output_fpath, 'w+', encoding='utf8') as f:
         for infpath in os.listdir(input_dir):
             if infpath.endswith(file_suffix):
-                with open(infpath, encoding='utf8') as inf:
+                with open(os.path.join(input_dir, infpath), encoding='utf8') as inf:
                     for l in inf:
                         f.write(l)
 
