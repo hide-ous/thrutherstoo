@@ -127,7 +127,7 @@ def collect_discussions(input_fpath, output_dir,
     with open(input_fpath, encoding='utf8') as f:
         try:
             discussions = set(
-                i['name'] if (('name' in i) and i['name'].startswith('t3_')) else i['link_id'] for i in
+                i['name'] if ('selftext' in i) else i['link_id'] for i in
                 map(json.loads, f))
         except:
             print(input_fpath)
