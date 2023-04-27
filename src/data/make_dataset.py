@@ -13,6 +13,8 @@ from dotenv import find_dotenv, load_dotenv
 import zstandard as zstd
 import io
 
+from zstandard import ZstdError
+
 from src.data.collect_reddit import search_pushshift
 
 CONSPIRACY_THEORIST_RE = '(conspiracist)|(conspiracy theorist)'
@@ -39,7 +41,11 @@ def main(input_filepath, output_filepath, text_field='body'):
 
 def decompress(fh):
     reader = zstd.ZstdDecompressor(max_window_size=2147483648).stream_reader(fh)
-    yield from io.TextIOWrapper(reader, encoding='utf-8')
+    try:
+        yield from io.TextIOWrapper(reader, encoding='utf-8')
+    except ZstdError as e:
+        print('error reading')
+        print(e)
 
 
 def read_zst(fpath):
@@ -120,7 +126,7 @@ def collect_discussions(input_fpath, output_dir,
                         output_suffix='_discussions.jsonl'):
     with open(input_fpath, encoding='utf8') as f:
         discussions = set(
-            i['name'] if i['name'].startswith('t3_') else i['link_id'] for i in
+            i['name'] if (('name'in i) and i['name'].startswith('t3_')) else i['link_id'] for i in
             map(json.loads, f))
 
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
