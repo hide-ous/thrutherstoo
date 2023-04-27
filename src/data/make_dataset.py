@@ -92,7 +92,8 @@ def consolidate_files(input_dir, output_fpath, file_suffix):
                 contribution_prefix = "t3_" if 'RS' in infpath else 't1_'
                 with open(os.path.join(input_dir, infpath), encoding='utf8') as inf:
                     for l in map(json.loads, inf):
-                        l['name'] = contribution_prefix+l['id']
+                        if 'name' not in l:
+                            l['name'] = contribution_prefix+l['id']
                         f.write(json.dumps(l)+'\n')
 
 
