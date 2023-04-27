@@ -125,10 +125,13 @@ def args_builder_discussions(contribution_fpaths, output_dir, output_suffix,
 def collect_discussions(input_fpath, output_dir,
                         output_suffix='_discussions.jsonl'):
     with open(input_fpath, encoding='utf8') as f:
-        discussions = set(
-            i['name'] if (('name'in i) and i['name'].startswith('t3_')) else i['link_id'] for i in
-            map(json.loads, f))
-
+        try:
+            discussions = set(
+                i['name'] if (('name' in i) and i['name'].startswith('t3_')) else i['link_id'] for i in
+                map(json.loads, f))
+        except:
+            print(input_fpath)
+            raise
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
 
