@@ -97,11 +97,11 @@ def consolidate_files(input_dir, output_fpath, file_suffix):
                         f.write(json.dumps(l)+'\n')
 
 
-def filter_instances_(args):
-    return filter_instances(*args)
+def filter_discussions_(args):
+    return filter_discussions(*args)
 
 
-def filter_instances(input_filepath, output_filepath, filter_field,
+def filter_discussions(input_filepath, output_filepath, filter_field,
                      filter_values):
 
     logger = logging.getLogger(__name__)
@@ -109,6 +109,8 @@ def filter_instances(input_filepath, output_filepath, filter_field,
     logger.info(f'{input_filepath} to {output_filepath}')
     with open(output_filepath, 'a+', encoding='utf8') as f:
         for contribution in read_zst(input_filepath):
+            if ('selftext' in contribution) and ('name' not in contribution):
+                contribution['name'] = 't3_' + contribution['id']
 
             if contribution[filter_field] in filter_values:
                 f.write(json.dumps(contribution) + '\n')
@@ -128,13 +130,9 @@ def args_builder_discussions(contribution_fpaths, output_dir, output_suffix,
 def collect_discussions(input_fpath, output_dir,
                         output_suffix='_discussions.jsonl'):
     with open(input_fpath, encoding='utf8') as f:
-        try:
-            discussions = set(
-                i['name'] if ('selftext' in i) else i['link_id'] for i in
-                map(json.loads, f))
-        except:
-            print(input_fpath)
-            raise
+        discussions = set(
+            i['name'] if ('selftext' in i) else i['link_id'] for i in
+            map(json.loads, f))
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
 
@@ -143,7 +141,7 @@ def collect_discussions(input_fpath, output_dir,
     with Pool(40) as pool:
         args = args_builder_discussions(contribution_fpaths, output_dir,
                                         output_suffix, discussions)
-        pool.map(filter_instances_, args)
+        pool.map(filter_discussions_, args)
         pool.join()
 
 
@@ -255,7 +253,7 @@ if __name__ == '__main__':
     # outfile = os.path.join(project_dir, 'data', 'interim', 'RC_2009-09.jsonl')
     # main(input_filepath=infile, output_filepath=outfile)
 
-    # parse_files(os.path.join(project_dir, 'data', 'interim'))
+    parse_files(os.path.join(project_dir, 'data', 'interim'))
     interim_dir = os.path.join(project_dir, 'data', 'interim')
     labeling_fpath = os.path.join(project_dir, 'data', 'interim',
                                   'labeling_contributions.jsonl')
