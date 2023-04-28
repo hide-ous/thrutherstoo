@@ -28,7 +28,7 @@ def main(input_filepath, output_filepath, text_field='body'):
         cleaned data ready to be analyzed (saved in ../processed).
     """
     logger = logging.getLogger(__name__)
-    logger.info('making final data set from raw data')
+    logger.info('search labeling instances')
     logger.info(f'{input_filepath} to {output_filepath}')
     with open(output_filepath, 'a+', encoding='utf8') as f:
         for contribution in read_zst(input_filepath):
@@ -93,8 +93,8 @@ def consolidate_files(input_dir, output_fpath, file_suffix):
                 with open(os.path.join(input_dir, infpath), encoding='utf8') as inf:
                     for l in map(json.loads, inf):
                         if 'name' not in l:
-                            l['name'] = contribution_prefix+l['id']
-                        f.write(json.dumps(l)+'\n')
+                            l['name'] = contribution_prefix + l['id']
+                        f.write(json.dumps(l) + '\n')
 
 
 def filter_discussions_(args):
@@ -102,10 +102,9 @@ def filter_discussions_(args):
 
 
 def filter_discussions(input_filepath, output_filepath, filter_field,
-                     filter_values):
-
+                       filter_values):
     logger = logging.getLogger(__name__)
-    logger.info('making final data set from raw data')
+    logger.info('filtering discussions')
     logger.info(f'{input_filepath} to {output_filepath}')
     with open(output_filepath, 'a+', encoding='utf8') as f:
         for contribution in read_zst(input_filepath):
@@ -208,22 +207,25 @@ class AlgorithmL:
             np.log(np.random.random()) / np.log(1 - self.w))) + 1
         self.w *= np.exp(np.log(np.random.random()) / self.k)
 
-def sample_instances(input_filepath, output_filepath, k):
 
+def sample_instances(input_filepath, output_filepath, k):
     logger = logging.getLogger(__name__)
-    logger.info('making final data set from raw data')
+    logger.info('sampling random contributions')
     logger.info(f'{input_filepath} to {output_filepath}')
-    algo=AlgorithmL(k)
+    algo = AlgorithmL(k)
     for contribution in read_zst(input_filepath):
         algo.add(contribution)
     with open(output_filepath, 'a+', encoding='utf8') as f:
         for contribution in algo.reservoir:
             f.write(json.dumps(contribution) + '\n')
 
+
 def sample_instances_(args):
     return sample_instances(*args)
+
+
 def sample_contributions(k, output_dir,
-                        output_suffix='_sample.jsonl'):
+                         output_suffix='_sample.jsonl'):
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
 
@@ -238,6 +240,7 @@ def sample_contributions(k, output_dir,
     with Pool(40) as pool:
         pool.map(sample_instances_, args)
         pool.join()
+
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -275,7 +278,7 @@ if __name__ == '__main__':
     k = 100000
     sample_contributions(k=k, output_dir=interim_dir, output_suffix=sample_suffix)
     sample_fpath = os.path.join(project_dir, 'data', 'interim',
-                                    f'sample_contributions_{k}.jsonl')
+                                f'sample_contributions_{k}.jsonl')
     consolidate_files(interim_dir,
                       sample_fpath,
                       file_suffix=sample_suffix)
