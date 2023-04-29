@@ -61,8 +61,9 @@ def args_builder_textfield(contribution_fpaths, output_dir, output_suffix):
     for infile in contribution_fpaths:
         outfile = os.path.split(infile)[-1][:-len('.zst')] + output_suffix
         outfile = os.path.join(output_dir, outfile)
-        text_field = "selftext" if "RS" in infile else "body"
-        args.append((infile, outfile, text_field))
+        if not os.path.exists(outfile):
+            text_field = "selftext" if "RS" in infile else "body"
+            args.append((infile, outfile, text_field))
     return args
 
 
@@ -76,7 +77,6 @@ def parse_files(output_dir, process_func=main_, output_suffix='_labeling.jsonl',
     with Pool(40) as pool:
         args = args_builder(contribution_fpaths, output_dir, output_suffix)
         pool.map(process_func, args)
-        pool.join()
 
 
 def consolidate_files(input_dir, output_fpath, file_suffix):
@@ -132,7 +132,6 @@ def collect_discussions(input_fpath, output_dir,
         args = args_builder_discussions(contribution_fpaths, output_dir,
                                         output_suffix, discussions)
         pool.map(filter_instances_, args)
-        pool.join()
 
 
 def get_contribution_fpaths():
@@ -227,7 +226,6 @@ def sample_contributions(k, output_dir,
 
     with Pool(40) as pool:
         pool.map(sample_instances_, args)
-        pool.join()
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
