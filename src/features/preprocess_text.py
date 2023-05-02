@@ -109,7 +109,7 @@ def doc2tokens(parsed, remove_punct=True, remove_digit=True, remove_stops=True, 
         if remove_pron and (token.lemma_ == '-PRON-'):  # skip pronouns
             continue
         else:
-            token = token.lemma_ if lemmatize else token.orth_
+            token = token.lemma_ if (lemmatize and not (token.lemma_ == '-PRON-')) else token.orth_
             if lowercase:
                 token = token.lower()
             if remove_punct:
