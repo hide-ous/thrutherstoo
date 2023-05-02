@@ -64,7 +64,7 @@ def main():
                                 f'sample_contributions_{k}.jsonl')
 
     for fpath in [labeling_fpath,
-                  # discussion_fpath, sample_fpath
+                  discussion_fpath, sample_fpath
                   ]:
         out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
 
