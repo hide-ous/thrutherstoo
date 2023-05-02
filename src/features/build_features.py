@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 from itertools import islice
 from pathlib import Path
 
@@ -25,7 +26,7 @@ def normalize_text(item: dict, **kwargs):
         item['text'] = item.pop('title')
     # title if link sub; title+self if self sub; text if comment
 
-    if contribution_type in set(['selftext_submission', 'link_submission']):
+    if contribution_type in {'selftext_submission', 'link_submission'}:
         item['fullname'] = "t3_" + item.pop('id')
         item['parent_fullname'] = None
         item['link_fullname'] = item['fullname']
@@ -37,7 +38,9 @@ def normalize_text(item: dict, **kwargs):
 
 
 def preprocess(item, text_field='text', preprocessed_field='preprocessed_text'):
-    item[preprocessed_field] = preprocess_pre_tokenizing(item[text_field])
+    text = item[text_field]
+    # text = re.sub(r'conspiracy.theorists?', 'conspiracy_theorist', text, flags=re.I|re.U|re.DOTALL|re.M)
+    item[preprocessed_field] = preprocess_pre_tokenizing(text)
     return item
 
 
