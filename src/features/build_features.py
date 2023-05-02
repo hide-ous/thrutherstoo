@@ -75,7 +75,7 @@ def main():
                                        remove_stops=True,
                                        remove_pron=False,
                                        lemmatize=True, lowercase=True,
-                                       n_process=1
+                                       n_process=-1
                                        ))
 
 
