@@ -20,7 +20,11 @@ def load_spacy(model_name='en_core_web_lg'):
     global __parser
     global spacy_stopwords
     if __parser is None:
-        __parser = spacy.load(model_name)
+        try:
+            __parser = spacy.load(model_name)
+        except:  # If not present, we download
+            spacy.cli.download(model_name)
+            __parser = spacy.load(model_name)
         spacy_stopwords = __parser.Defaults.stop_words
         spacy_stopwords.update(set(string.punctuation))
         # import en_core_web_lg
@@ -123,20 +127,12 @@ def text2tokens(txt, remove_punct=True, remove_digit=True, remove_stops=True, re
                       remove_pron=remove_pron, lemmatize=lemmatize, lowercase=lowercase)
 
 
-def texts2tokens(txt_stream, remove_punct=True, remove_digit=True, remove_stops=True, remove_pron=True, lemmatize=True,
-                 lowercase=True, n_process=-1):
-    parser = get_parser()
-    for parsed in parser.pipe(map(preprocess_pre_tokenizing, txt_stream), n_process=n_process):
-        yield doc2tokens(parsed=parsed, remove_punct=remove_punct, remove_digit=remove_digit, remove_stops=remove_stops,
-                         remove_pron=remove_pron, lemmatize=lemmatize, lowercase=lowercase)
-
-
-def clean_items(item_stream, text_field, remove_punct=True, remove_digit=True, remove_stops=True, remove_pron=True,
+def clean_items(item_stream, text_field, cleaned_text_field, remove_punct=True, remove_digit=True, remove_stops=True, remove_pron=True,
                 lemmatize=True, lowercase=True, n_process=-1):
     parser = get_parser()
-    for parsed, item in parser.pipe(((preprocess_pre_tokenizing(i[text_field]), i) for i in item_stream),
+    for parsed, item in parser.pipe((((i[text_field]), i) for i in item_stream),
                                     n_process=n_process, as_tuples=True):
-        item[text_field] = ' '.join(
+        item[cleaned_text_field] = ' '.join(
             doc2tokens(parsed=parsed, remove_punct=remove_punct, remove_digit=remove_digit, remove_stops=remove_stops,
                        remove_pron=remove_pron, lemmatize=lemmatize, lowercase=lowercase))
         yield item

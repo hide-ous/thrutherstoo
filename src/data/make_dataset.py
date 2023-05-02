@@ -267,7 +267,7 @@ if __name__ == '__main__':
                         output_suffix=discussion_suffix)
 
     discussion_fpath = os.path.join(project_dir, 'data', 'interim',
-                                    'labeling_discussions.jsonl')
+                                    'labeling_discussions_all.jsonl')
     consolidate_files(interim_dir,
                       discussion_fpath,
                       file_suffix=discussion_suffix)

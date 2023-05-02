@@ -22,6 +22,7 @@ class JsonFormatter(Formatter):
 FORMATTERS = {'.csv': StringFormatter(),
               '.txt': StringFormatter(),
               '.njson': JsonFormatter(),
+              '.jsonl': JsonFormatter(),
               '.ndjson': JsonFormatter(),
               '.jsonlines': JsonFormatter(),
               '.jl': JsonFormatter(),
