@@ -1,9 +1,13 @@
+import datetime
 import json
 import logging
 import os
 import re
-from itertools import islice
 from pathlib import Path
+
+from gensim.models import Word2Vec
+from gensim.test.utils import datapath
+from gensim import utils
 
 from src.features.preprocess_text import clean_items, preprocess_pre_tokenizing
 from src.utils import to_file
@@ -49,7 +53,7 @@ def stream_normalized_contribution(fpath):
         yield from map(normalize_text, map(json.loads, f))
 
 
-def main():
+def preprocess_files():
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
     project_dir = Path(__file__).resolve().parents[2]
@@ -64,7 +68,8 @@ def main():
                                 f'sample_contributions_{k}.jsonl')
 
     for fpath in [labeling_fpath,
-                  discussion_fpath, sample_fpath
+                  sample_fpath,
+                  discussion_fpath,
                   ]:
         out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
 
@@ -82,5 +87,63 @@ def main():
                                        ))
 
 
+class MyCorpus:
+    """An iterator that yields sentences (lists of str)."""
+
+    def __init__(self, fpath):
+        self.fpath = fpath
+
+    def __iter__(self):
+        corpus_path = datapath(self.fpath)
+        for line in open(corpus_path):
+            # assume there's one document per line, tokens separated by whitespace
+            yield line.split()
+
+
+def build_embeddings():
+    # prepare input for the embeddings
+    project_dir = Path(__file__).resolve().parents[2]
+
+    interim_dir = os.path.join(project_dir, 'data', 'interim')
+    labeling_fpath = os.path.join(interim_dir,
+                                  'labeling_contributions_preprocessed.jsonl')
+    k = 100000
+    sample_fpath = os.path.join(interim_dir,
+                                f'sample_contributions_{k}_preprocessed.jsonl')
+    out_fhandles = dict()
+    os.makedirs(os.path.join(interim_dir, 'text_years'), exist_ok=True)
+    for input_fpath in [labeling_fpath, sample_fpath]:
+        with open(input_fpath, encoding='utf8') as f:
+            for item in map(json.loads, f):
+                item_date = datetime.datetime.fromtimestamp(item['created_utc'])
+                item_year = item_date.year
+                item_text = item['processed_text']
+                item_text = re.sub(r'conspiracy.theorists?',
+                                   'conspiracy_theorist', item_text,
+                                   flags=re.I | re.U | re.DOTALL | re.M)
+                if item_year not in out_fhandles:
+                    out_fhandles[item_year] = open(
+                        os.path.join(interim_dir, 'text_years',
+                                     f'{item_year}.csv'), "w+", encoding='utf8')
+                ff = out_fhandles[item_year]
+                ff.write(item_text + '\n')
+    for ff in out_fhandles.values():
+        ff.close()
+
+    # train embeddings
+    os.makedirs(os.path.join(interim_dir, 'embeddings'), exist_ok=True)
+    for fname in os.listdir(os.path.join(interim_dir, 'text_years')):
+        fpath = os.path.join(interim_dir, 'text_years', fname)
+        year = int(fpath[-len('.csv') - 4:-len('.csv')])
+        corpus = MyCorpus(fpath)
+        model = Word2Vec(sentences=corpus, seed=42, epochs=10)
+        model.save(
+            os.path.join(interim_dir, 'embeddings', f"word2vec_{year}.model"))
+        word_vectors = model.wv
+        word_vectors.save(os.path.join(interim_dir, 'embeddings',
+                                       f"word2vec_{year}.wordvectors"))
+
+
 if __name__ == '__main__':
-    main()
+    preprocess_files()
+    build_embeddings()
