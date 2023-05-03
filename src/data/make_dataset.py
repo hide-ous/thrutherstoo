@@ -288,7 +288,7 @@ if __name__ == '__main__':
 
     sample_suffix = '_sample_ct.jsonl'
     k = 100000
-    sample_contributions(k=k, output_dir=interim_dir, output_suffix=sample_suffix, subreddits=conspiracy_subreddits)
+    sample_contributions(k=k, output_dir=interim_dir, output_suffix=sample_suffix, subreddits=CONSPIRACY_SUBREDDITS)
     sample_fpath = os.path.join(project_dir, 'data', 'interim',
                                 f'sample_contributions_{k}_ct.jsonl')
     consolidate_files(interim_dir,
@@ -297,7 +297,7 @@ if __name__ == '__main__':
 
     sample_suffix = '_sample_default.jsonl'
     k = 100000
-    sample_contributions(k=k, output_dir=interim_dir, output_suffix=sample_suffix, subreddits=default_subreddits)
+    sample_contributions(k=k, output_dir=interim_dir, output_suffix=sample_suffix, subreddits=DEFAULT_SUBREDDITS)
     sample_fpath = os.path.join(project_dir, 'data', 'interim',
                                 f'sample_contributions_{k}_default.jsonl')
     consolidate_files(interim_dir,
