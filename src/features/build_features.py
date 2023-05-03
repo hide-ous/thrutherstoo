@@ -7,11 +7,12 @@ from pathlib import Path
 
 from gensim.models import Word2Vec
 from gensim.test.utils import datapath
-from gensim import utils
 
+from src.data.make_dataset import CONSPIRACY_THEORIST_RE
 from src.features.preprocess_text import clean_items, preprocess_pre_tokenizing
 from src.utils import to_file
 
+from langdetect import detect
 
 def normalize_text(item: dict, **kwargs):
     contribution_type = "comment"
@@ -67,25 +68,70 @@ def preprocess_files():
     sample_fpath = os.path.join(interim_dir,
                                 f'sample_contributions_{k}.jsonl')
 
-    for fpath in [labeling_fpath,
-                  sample_fpath,
-                  discussion_fpath,
-                  ]:
-        out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+    def filter_discussions(item):
+        pass
 
-        to_file(out_fpath, clean_items(item_stream=
-                                       map(preprocess,
-                                           stream_normalized_contribution(
-                                               fpath)),
-                                       text_field='preprocessed_text',
-                                       cleaned_text_field='processed_text',
-                                       remove_punct=True, remove_digit=True,
-                                       remove_stops=True,
-                                       remove_pron=False,
-                                       lemmatize=True, lowercase=True,
-                                       n_process=-1
-                                       ))
+    fpath = labeling_fpath
+    out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
 
+    to_file(out_fpath, clean_items(item_stream=
+                                   filter(lambda item: re.findall(
+                                       CONSPIRACY_THEORIST_RE,
+                                       item['preprocessed_text'],
+                                       flags=re.I | re.DOTALL | re.U | re.M),
+                                          map(preprocess,
+                                              stream_normalized_contribution(
+                                                  fpath))),
+                                   text_field='preprocessed_text',
+                                   cleaned_text_field='processed_text',
+                                   remove_punct=True, remove_digit=True,
+                                   remove_stops=True,
+                                   remove_pron=False,
+                                   lemmatize=True, lowercase=True,
+                                   n_process=-1
+                                   ))
+
+    # read discussions filtered after preprocessing
+    filter_field = lambda item: "name" if "selftext" in item else "link_id"
+    with open(out_fpath, encoding='utf8') as f:
+        discussions = set(
+            i['name'] if ('selftext' in i) else i['link_id'] for i in
+            map(json.loads, f))
+
+    fpath = discussion_fpath
+    out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+    # preprocess only filtered discussions
+    to_file(out_fpath, clean_items(item_stream=
+                                   map(preprocess,
+                                       filter(lambda item: item[filter_field(item)] in discussions,
+                                              stream_normalized_contribution(
+                                                  fpath))),
+                                   text_field='preprocessed_text',
+                                   cleaned_text_field='processed_text',
+                                   remove_punct=True, remove_digit=True,
+                                   remove_stops=True,
+                                   remove_pron=False,
+                                   lemmatize=True, lowercase=True,
+                                   n_process=-1
+                                   ))
+
+    fpath = sample_fpath
+    out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+    # keep only English contributions in the random sample
+    to_file(out_fpath, clean_items(item_stream=
+                                   filter(lambda item: detect(
+                                       item['text']) == 'en',
+                                          map(preprocess,
+                                              stream_normalized_contribution(
+                                                  fpath))),
+                                   text_field='preprocessed_text',
+                                   cleaned_text_field='processed_text',
+                                   remove_punct=True, remove_digit=True,
+                                   remove_stops=True,
+                                   remove_pron=False,
+                                   lemmatize=True, lowercase=True,
+                                   n_process=-1
+                                   ))
 
 class MyCorpus:
     """An iterator that yields sentences (lists of str)."""

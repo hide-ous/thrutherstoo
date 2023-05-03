@@ -207,13 +207,16 @@ class AlgorithmL:
         self.w *= np.exp(np.log(np.random.random()) / self.k)
 
 
-def sample_instances(input_filepath, output_filepath, k):
+def sample_instances(input_filepath, output_filepath, k, subreddits=None):
     logger = logging.getLogger(__name__)
     logger.info('sampling random contributions')
     logger.info(f'{input_filepath} to {output_filepath}')
     algo = AlgorithmL(k)
     for contribution in read_zst(input_filepath):
-        algo.add(contribution)
+        if subreddits and (contribution['subreddit'] not in subreddits):
+            continue
+        else:
+            algo.add(contribution)
     with open(output_filepath, 'a+', encoding='utf8') as f:
         for contribution in algo.reservoir:
             f.write(json.dumps(contribution) + '\n')
@@ -224,7 +227,7 @@ def sample_instances_(args):
 
 
 def sample_contributions(k, output_dir,
-                         output_suffix='_sample.jsonl'):
+                         output_suffix='_sample.jsonl', subreddits=None):
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
 
@@ -234,7 +237,7 @@ def sample_contributions(k, output_dir,
     for infile in contribution_fpaths:
         outfile = os.path.split(infile)[-1][:-len('.zst')] + output_suffix
         outfile = os.path.join(output_dir, outfile)
-        args.append((infile, outfile, k))
+        args.append((infile, outfile, k, subreddits))
 
     with Pool(40) as pool:
         pool.map(sample_instances_, args)
@@ -281,6 +284,23 @@ if __name__ == '__main__':
                       sample_fpath,
                       file_suffix=sample_suffix)
 
+    sample_suffix = '_sample_ct.jsonl'
+    k = 100000
+    sample_contributions(k=k, output_dir=interim_dir, output_suffix=sample_suffix, subreddits=conspiracy_subreddits)
+    sample_fpath = os.path.join(project_dir, 'data', 'interim',
+                                f'sample_contributions_{k}_ct.jsonl')
+    consolidate_files(interim_dir,
+                      sample_fpath,
+                      file_suffix=sample_suffix)
+
+    sample_suffix = '_sample_default.jsonl'
+    k = 100000
+    sample_contributions(k=k, output_dir=interim_dir, output_suffix=sample_suffix, subreddits=default_subreddits)
+    sample_fpath = os.path.join(project_dir, 'data', 'interim',
+                                f'sample_contributions_{k}_default.jsonl')
+    consolidate_files(interim_dir,
+                      sample_fpath,
+                      file_suffix=sample_suffix)
     # outfile = os.path.join(project_dir, 'data', 'interim',
     #                        'labeling_contributions.jsonl')
     # search_pushshift(store_path=outfile,
