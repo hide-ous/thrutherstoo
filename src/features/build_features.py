@@ -14,6 +14,7 @@ from src.utils import to_file
 
 from langdetect import detect
 
+
 def normalize_text(item: dict, **kwargs):
     contribution_type = "comment"
     if 'is_self' in item:
@@ -68,34 +69,32 @@ def preprocess_files():
     sample_fpath = os.path.join(interim_dir,
                                 f'sample_contributions_{k}.jsonl')
 
-    def filter_discussions(item):
-        pass
-
     fpath = labeling_fpath
     out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
 
-    to_file(out_fpath, clean_items(item_stream=
-                                   filter(lambda item: re.findall(
-                                       CONSPIRACY_THEORIST_RE,
-                                       item['preprocessed_text'],
-                                       flags=re.I | re.DOTALL | re.U | re.M),
-                                          map(preprocess,
-                                              stream_normalized_contribution(
-                                                  fpath))),
-                                   text_field='preprocessed_text',
-                                   cleaned_text_field='processed_text',
-                                   remove_punct=True, remove_digit=True,
-                                   remove_stops=True,
-                                   remove_pron=False,
-                                   lemmatize=True, lowercase=True,
-                                   n_process=-1
-                                   ))
+    # to_file(out_fpath, clean_items(item_stream=
+    #                                filter(lambda item: re.findall(
+    #                                    CONSPIRACY_THEORIST_RE,
+    #                                    item['preprocessed_text'],
+    #                                    flags=re.I | re.DOTALL | re.U | re.M),
+    #                                       map(preprocess,
+    #                                           stream_normalized_contribution(
+    #                                               fpath))),
+    #                                text_field='preprocessed_text',
+    #                                cleaned_text_field='processed_text',
+    #                                remove_punct=True, remove_digit=True,
+    #                                remove_stops=True,
+    #                                remove_pron=False,
+    #                                lemmatize=True, lowercase=True,
+    #                                n_process=-1
+    #                                ))
 
     # read discussions filtered after preprocessing
-    filter_field = lambda item: "name" if "selftext" in item else "link_id"
+    # filter_field = lambda item: "name" if "selftext" in item else "link_id"
     with open(out_fpath, encoding='utf8') as f:
         discussions = set(
-            i['name'] if ('selftext' in i) else i['link_id'] for i in
+            i['link_fullname'] for i in
+            # i['name'] if ('selftext' in i) else i['link_id'] for i in
             map(json.loads, f))
 
     fpath = discussion_fpath
@@ -103,7 +102,7 @@ def preprocess_files():
     # preprocess only filtered discussions
     to_file(out_fpath, clean_items(item_stream=
                                    map(preprocess,
-                                       filter(lambda item: item[filter_field(item)] in discussions,
+                                       filter(lambda item: item['link_fullname'] in discussions,
                                               stream_normalized_contribution(
                                                   fpath))),
                                    text_field='preprocessed_text',
@@ -132,6 +131,7 @@ def preprocess_files():
                                    lemmatize=True, lowercase=True,
                                    n_process=-1
                                    ))
+
 
 class MyCorpus:
     """An iterator that yields sentences (lists of str)."""

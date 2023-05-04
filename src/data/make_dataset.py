@@ -18,6 +18,8 @@ from zstandard import ZstdError
 from src.data.collect_reddit import search_pushshift
 
 CONSPIRACY_THEORIST_RE = '(conspiracist)|(conspiracy theorist)'
+CONSPIRACY_SUBREDDITS = ["984isreality","911truth","actualconspiracies","Bilderberg","C_S_T","CHEMPRINTS","Chemtrail","chemtrails","chrisolivertimes","climateskeptics","ClintonInvestigation","conspiracies","conspiracy","conspiracy_commons","conspiracydocumentary","conspiracyfact","conspiracyhub","ConspiracyII","ConspiracyPublic","conspiracytheories","ConspiracyTheory","conspiracyundone","ConspiracyX","ConspiracyZone","conspiro","CorporateMalfeasance","CosmicDisclosure","DescentIntoTyranny","DigitalCartel","FalseFlagWatch","finlandConspiracy","FringeTheory","HealthConspiracy","highersidechats","HOLLOWEARTH","LimitedHangouts","moonhoax","notaglobe","OccultConspiracy","OccupyLangley","PedoGate","PoliticalConspiracy","ProConspiracy","ProjectSTARGATE","reptiliandude","reptilians","RomeRules","TargetedEnergyWeapons","TargetedIndividuals","theworldisflat","TopConspiracy","TruthLeaks","UNAgenda21","VaccinesCause","WhereIsAssange"]
+DEFAULT_SUBREDDITS = ["AskReddit","announcements","funny","pics","todayilearned","science","IAmA","blog","videos","worldnews","gaming","movies","Music","aww","news","gifs","askscience","explainlikeimfive","EarthPorn","books","television","LifeProTips","sports","DIY","Showerthoughts","space","Jokes","tifu","food","photoshopbattles","Art","InternetIsBeautiful","mildlyinteresting","GetMotivated","history","nottheonion","gadgets","dataisbeautiful","Futurology","Documentaries","listentothis","personalfinance","philosophy","nosleep","creepy","OldSchoolCool","UpliftingNews","WritingPrompts","TwoXChromosomes"]
 
 
 # @click.command()
@@ -253,6 +255,7 @@ if __name__ == '__main__':
 
     # not used in this stub but often useful for finding various files
     project_dir = Path(__file__).resolve().parents[2]
+    interim_dir = os.path.join(project_dir, 'data', 'interim')
 
     # # find .env automagically by walking up directories until it's found, then
     # # load up the .env entries as environment variables
@@ -261,36 +264,35 @@ if __name__ == '__main__':
     # outfile = os.path.join(project_dir, 'data', 'interim', 'RC_2009-09.jsonl')
     # main(input_filepath=infile, output_filepath=outfile)
 
-    parse_files(os.path.join(project_dir, 'data', 'interim'))
-    interim_dir = os.path.join(project_dir, 'data', 'interim')
-    labeling_fpath = os.path.join(project_dir, 'data', 'interim',
-                                  'labeling_contributions.jsonl')
-    consolidate_files(interim_dir,
-                      labeling_fpath,
-                      file_suffix='_labeling.jsonl')
-
-    discussion_suffix = '_discussions.jsonl'
-    collect_discussions(labeling_fpath, interim_dir,
-                        output_suffix=discussion_suffix)
-
-    discussion_fpath = os.path.join(project_dir, 'data', 'interim',
-                                    'labeling_discussions_all.jsonl')
-    consolidate_files(interim_dir,
-                      discussion_fpath,
-                      file_suffix=discussion_suffix)
-
-    sample_suffix = '_sample.jsonl'
-    k = 100000
-    sample_contributions(k=k, output_dir=interim_dir, output_suffix=sample_suffix)
-    sample_fpath = os.path.join(project_dir, 'data', 'interim',
-                                f'sample_contributions_{k}.jsonl')
-    consolidate_files(interim_dir,
-                      sample_fpath,
-                      file_suffix=sample_suffix)
+    # parse_files(os.path.join(project_dir, 'data', 'interim'))
+    # labeling_fpath = os.path.join(project_dir, 'data', 'interim',
+    #                               'labeling_contributions.jsonl')
+    # consolidate_files(interim_dir,
+    #                   labeling_fpath,
+    #                   file_suffix='_labeling.jsonl')
+    #
+    # discussion_suffix = '_discussions.jsonl'
+    # collect_discussions(labeling_fpath, interim_dir,
+    #                     output_suffix=discussion_suffix)
+    #
+    # discussion_fpath = os.path.join(project_dir, 'data', 'interim',
+    #                                 'labeling_discussions_all.jsonl')
+    # consolidate_files(interim_dir,
+    #                   discussion_fpath,
+    #                   file_suffix=discussion_suffix)
+    #
+    # sample_suffix = '_sample.jsonl'
+    # k = 100000
+    # sample_contributions(k=k, output_dir=interim_dir, output_suffix=sample_suffix)
+    # sample_fpath = os.path.join(project_dir, 'data', 'interim',
+    #                             f'sample_contributions_{k}.jsonl')
+    # consolidate_files(interim_dir,
+    #                   sample_fpath,
+    #                   file_suffix=sample_suffix)
 
     sample_suffix = '_sample_ct.jsonl'
     k = 100000
-    sample_contributions(k=k, output_dir=interim_dir, output_suffix=sample_suffix, subreddits=conspiracy_subreddits)
+    sample_contributions(k=k, output_dir=interim_dir, output_suffix=sample_suffix, subreddits=CONSPIRACY_SUBREDDITS)
     sample_fpath = os.path.join(project_dir, 'data', 'interim',
                                 f'sample_contributions_{k}_ct.jsonl')
     consolidate_files(interim_dir,
@@ -299,7 +301,7 @@ if __name__ == '__main__':
 
     sample_suffix = '_sample_default.jsonl'
     k = 100000
-    sample_contributions(k=k, output_dir=interim_dir, output_suffix=sample_suffix, subreddits=default_subreddits)
+    sample_contributions(k=k, output_dir=interim_dir, output_suffix=sample_suffix, subreddits=DEFAULT_SUBREDDITS)
     sample_fpath = os.path.join(project_dir, 'data', 'interim',
                                 f'sample_contributions_{k}_default.jsonl')
     consolidate_files(interim_dir,
