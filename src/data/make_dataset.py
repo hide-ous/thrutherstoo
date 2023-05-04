@@ -221,8 +221,9 @@ def sample_instances(input_filepath, output_filepath, k, subreddits=None):
             else:
                 algo.add(contribution)
         except KeyError:
-            logger.error('no subreddit specified')
-            logger.error(str(contribution))
+            # logger.error('no subreddit specified')
+            # logger.error(str(contribution))
+            pass
     with open(output_filepath, 'a+', encoding='utf8') as f:
         for contribution in algo.reservoir:
             f.write(json.dumps(contribution) + '\n')
