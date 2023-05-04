@@ -130,7 +130,7 @@ def text2tokens(txt, remove_punct=True, remove_digit=True, remove_stops=True, re
 def clean_items(item_stream, text_field, cleaned_text_field, remove_punct=True, remove_digit=True, remove_stops=True, remove_pron=True,
                 lemmatize=True, lowercase=True, n_process=-1):
     parser = get_parser()
-    for parsed, item in parser.pipe((((i[text_field]), i) for i in item_stream),
+    for parsed, item in parser.pipe((((i[text_field]), i) for i in map(lambda x:x.get(), item_stream)),
                                     n_process=n_process, as_tuples=True):
         item[cleaned_text_field] = ' '.join(
             doc2tokens(parsed=parsed, remove_punct=remove_punct, remove_digit=remove_digit, remove_stops=remove_stops,

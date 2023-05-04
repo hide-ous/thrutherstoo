@@ -2,6 +2,7 @@ import datetime
 import json
 import logging
 import os
+import pickle
 import re
 from multiprocessing import Pool
 from pathlib import Path
@@ -96,18 +97,25 @@ def preprocess_files():
 
     # read discussions filtered after preprocessing
     # filter_field = lambda item: "name" if "selftext" in item else "link_id"
-    with open(out_fpath, encoding='utf8') as f:
-        discussions = set(
-            i['link_fullname'] for i in
-            # i['name'] if ('selftext' in i) else i['link_id'] for i in
-            map(json.loads, f))
-
+    discussion_id_fpath = os.path.join(interim_dir, 'discussion_ids.pkl')
+    if os.path.exists(discussion_id_fpath):
+        with open(discussion_id_fpath, 'rb') as f:
+            discussions = pickle.load(f)
+    else:
+        with open(out_fpath, encoding='utf8') as f:
+            discussions = set(
+                i['link_fullname'] for i in
+                # i['name'] if ('selftext' in i) else i['link_id'] for i in
+                map(json.loads, f))
+        with open(discussion_id_fpath, 'wb+') as f:
+            pickle.dump(discussions, f)
+    print(f'loaded {len(discussions)} discussion ids')
     fpath = discussion_fpath
     out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
     # preprocess only filtered discussions
     with Pool(40) as pool:
         to_file(out_fpath, clean_items(item_stream=
-                                       pool.map(preprocess,
+                                       pool.map_async(preprocess,
                                            filter(lambda item: item['link_fullname'] in discussions,
                                                   stream_normalized_contribution(
                                                       fpath))),
