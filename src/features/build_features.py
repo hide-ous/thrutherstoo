@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+from multiprocessing import Pool
 from pathlib import Path
 
 from gensim.models import Word2Vec
@@ -68,6 +69,10 @@ def preprocess_files():
     k = 100000
     sample_fpath = os.path.join(interim_dir,
                                 f'sample_contributions_{k}.jsonl')
+    ct_sample_fpath = os.path.join(project_dir, 'data', 'interim',
+                                f'sample_contributions_{k}_ct.jsonl')
+    default_sample_fpath = os.path.join(project_dir, 'data', 'interim',
+                                f'sample_contributions_{k}_default.jsonl')
 
     fpath = labeling_fpath
     out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
@@ -100,39 +105,76 @@ def preprocess_files():
     fpath = discussion_fpath
     out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
     # preprocess only filtered discussions
-    to_file(out_fpath, clean_items(item_stream=
-                                   map(preprocess,
-                                       filter(lambda item: item['link_fullname'] in discussions,
-                                              stream_normalized_contribution(
-                                                  fpath))),
-                                   text_field='preprocessed_text',
-                                   cleaned_text_field='processed_text',
-                                   remove_punct=True, remove_digit=True,
-                                   remove_stops=True,
-                                   remove_pron=False,
-                                   lemmatize=True, lowercase=True,
-                                   n_process=-1
-                                   ))
+    with Pool(40) as pool:
+        to_file(out_fpath, clean_items(item_stream=
+                                       pool.map(preprocess,
+                                           filter(lambda item: item['link_fullname'] in discussions,
+                                                  stream_normalized_contribution(
+                                                      fpath))),
+                                       text_field='preprocessed_text',
+                                       cleaned_text_field='processed_text',
+                                       remove_punct=True, remove_digit=True,
+                                       remove_stops=True,
+                                       remove_pron=False,
+                                       lemmatize=True, lowercase=True,
+                                       n_process=-1
+                                       ))
 
     fpath = sample_fpath
     out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
     # keep only English contributions in the random sample
-    to_file(out_fpath, clean_items(item_stream=
-                                   filter(lambda item: detect(
-                                       item['text']) == 'en',
-                                          map(preprocess,
-                                              stream_normalized_contribution(
-                                                  fpath))),
-                                   text_field='preprocessed_text',
-                                   cleaned_text_field='processed_text',
-                                   remove_punct=True, remove_digit=True,
-                                   remove_stops=True,
-                                   remove_pron=False,
-                                   lemmatize=True, lowercase=True,
-                                   n_process=-1
-                                   ))
+    with Pool(40) as pool:
+        to_file(out_fpath, clean_items(item_stream=
+                                       filter(lambda item: detect(
+                                           item['text']) == 'en',
+                                              pool.map(preprocess,
+                                                  stream_normalized_contribution(
+                                                      fpath))),
+                                       text_field='preprocessed_text',
+                                       cleaned_text_field='processed_text',
+                                       remove_punct=True, remove_digit=True,
+                                       remove_stops=True,
+                                       remove_pron=False,
+                                       lemmatize=True, lowercase=True,
+                                       n_process=-1
+                                       ))
 
-
+    fpath = ct_sample_fpath
+    out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+    # keep only English contributions in the random sample
+    with Pool(40) as pool:
+        to_file(out_fpath, clean_items(item_stream=
+                                       filter(lambda item: detect(
+                                           item['text']) == 'en',
+                                              pool.map(preprocess,
+                                                  stream_normalized_contribution(
+                                                      fpath))),
+                                       text_field='preprocessed_text',
+                                       cleaned_text_field='processed_text',
+                                       remove_punct=True, remove_digit=True,
+                                       remove_stops=True,
+                                       remove_pron=False,
+                                       lemmatize=True, lowercase=True,
+                                       n_process=-1
+                                       ))
+    fpath = default_sample_fpath
+    out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+    # keep only English contributions in the random sample
+    with Pool(40) as pool:
+        to_file(out_fpath, clean_items(item_stream=
+                                       filter(lambda item: detect(
+                                           item['text']) == 'en',
+                                              pool.map(preprocess,
+                                                  stream_normalized_contribution(
+                                                      fpath))),
+                                       text_field='preprocessed_text',
+                                       cleaned_text_field='processed_text',
+                                       remove_punct=True, remove_digit=True,
+                                       remove_stops=True,
+                                       remove_pron=False,
+                                       lemmatize=True, lowercase=True,
+                                       n_process=-1
+                                       ))
 class MyCorpus:
     """An iterator that yields sentences (lists of str)."""
 
