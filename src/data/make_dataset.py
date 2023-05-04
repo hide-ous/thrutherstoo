@@ -213,10 +213,14 @@ def sample_instances(input_filepath, output_filepath, k, subreddits=None):
     logger.info(f'{input_filepath} to {output_filepath}')
     algo = AlgorithmL(k)
     for contribution in read_zst(input_filepath):
-        if subreddits and (contribution['subreddit'] not in subreddits):
-            continue
-        else:
-            algo.add(contribution)
+        try:
+            if subreddits and (contribution['subreddit'] not in subreddits):
+                continue
+            else:
+                algo.add(contribution)
+        except KeyError:
+            logger.error('no subreddit specified')
+            logger.error(str(contribution))
     with open(output_filepath, 'a+', encoding='utf8') as f:
         for contribution in algo.reservoir:
             f.write(json.dumps(contribution) + '\n')
