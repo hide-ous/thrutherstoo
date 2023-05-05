@@ -4,6 +4,7 @@ import logging
 import os
 import pickle
 import re
+from functools import partial
 from itertools import islice
 from multiprocessing.pool import Pool
 from pathlib import Path
@@ -56,6 +57,21 @@ def preprocess(item, text_field='text', preprocessed_field='preprocessed_text'):
 def stream_normalized_contribution(fpath):
     with open(fpath, encoding='utf8') as f:
         yield from map(normalize_text, map(json.loads, f))
+
+
+def detect_language(item, language='en', text_field='text'):
+    return detect(item[text_field]) == language
+
+
+def filter_language(item_stream, language='en', text_field='text',
+                    n_processors=40):
+    with Pool(n_processors) as pool:
+        for item, keep in zip(item_stream, pool.imap(
+                partial(detect_language, language=language,
+                        text_field=text_field),
+                item_stream)):
+            if keep:
+                yield item
 
 
 def preprocess_files():
@@ -131,14 +147,15 @@ def preprocess_files():
 
     fpath = sample_fpath
     out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+
     # keep only English contributions in the random sample
     with Pool(40) as pool:
         to_file(out_fpath, clean_items(item_stream=
                                        filter(lambda item: detect(
-                                           item.get()['text']) == 'en',
+                                           item['text']) == 'en',
                                               pool.imap_unordered(preprocess,
-                                                       stream_normalized_contribution(
-                                                           fpath))),
+                                                                  stream_normalized_contribution(
+                                                                      fpath))),
                                        text_field='preprocessed_text',
                                        cleaned_text_field='processed_text',
                                        remove_punct=True, remove_digit=True,
