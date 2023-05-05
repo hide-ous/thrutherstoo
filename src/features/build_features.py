@@ -71,9 +71,9 @@ def preprocess_files():
     sample_fpath = os.path.join(interim_dir,
                                 f'sample_contributions_{k}.jsonl')
     ct_sample_fpath = os.path.join(project_dir, 'data', 'interim',
-                                f'sample_contributions_{k}_ct.jsonl')
+                                   f'sample_contributions_{k}_ct.jsonl')
     default_sample_fpath = os.path.join(project_dir, 'data', 'interim',
-                                f'sample_contributions_{k}_default.jsonl')
+                                        f'sample_contributions_{k}_default.jsonl')
 
     fpath = labeling_fpath
     out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
@@ -95,38 +95,38 @@ def preprocess_files():
     #                                n_process=-1
     #                                ))
 
-    # read discussions filtered after preprocessing
-    # filter_field = lambda item: "name" if "selftext" in item else "link_id"
-    discussion_id_fpath = os.path.join(interim_dir, 'discussion_ids.pkl')
-    if os.path.exists(discussion_id_fpath):
-        with open(discussion_id_fpath, 'rb') as f:
-            discussions = pickle.load(f)
-    else:
-        with open(out_fpath, encoding='utf8') as f:
-            discussions = set(
-                i['link_fullname'] for i in
-                # i['name'] if ('selftext' in i) else i['link_id'] for i in
-                map(json.loads, f))
-        with open(discussion_id_fpath, 'wb+') as f:
-            pickle.dump(discussions, f)
-    print(f'loaded {len(discussions)} discussion ids')
-    fpath = discussion_fpath
-    out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
-    # preprocess only filtered discussions
-    with Pool(40) as pool:
-        to_file(out_fpath, clean_items(item_stream=
-                                       pool.map_async(preprocess,
-                                           filter(lambda item: item['link_fullname'] in discussions,
-                                                  stream_normalized_contribution(
-                                                      fpath))),
-                                       text_field='preprocessed_text',
-                                       cleaned_text_field='processed_text',
-                                       remove_punct=True, remove_digit=True,
-                                       remove_stops=True,
-                                       remove_pron=False,
-                                       lemmatize=True, lowercase=True,
-                                       n_process=-1
-                                       ))
+    # # read discussions filtered after preprocessing
+    # discussion_id_fpath = os.path.join(interim_dir, 'discussion_ids.pkl')
+    # if os.path.exists(discussion_id_fpath):
+    #     with open(discussion_id_fpath, 'rb') as f:
+    #         discussions = pickle.load(f)
+    # else:
+    #     with open(out_fpath, encoding='utf8') as f:
+    #         discussions = set(
+    #             i['link_fullname'] for i in
+    #             # i['name'] if ('selftext' in i) else i['link_id'] for i in
+    #             map(json.loads, f))
+    #     with open(discussion_id_fpath, 'wb+') as f:
+    #         pickle.dump(discussions, f)
+    # print(f'loaded {len(discussions)} discussion ids')
+    # fpath = discussion_fpath
+    # out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+    # # preprocess only filtered discussions
+    # with Pool(40) as pool:
+    #     to_file(out_fpath, clean_items(item_stream=
+    #                                    pool.map_async(preprocess,
+    #                                                   filter(lambda item: item[
+    #                                                                           'link_fullname'] in discussions,
+    #                                                          stream_normalized_contribution(
+    #                                                              fpath))),
+    #                                    text_field='preprocessed_text',
+    #                                    cleaned_text_field='processed_text',
+    #                                    remove_punct=True, remove_digit=True,
+    #                                    remove_stops=True,
+    #                                    remove_pron=False,
+    #                                    lemmatize=True, lowercase=True,
+    #                                    n_process=-1
+    #                                    ))
 
     fpath = sample_fpath
     out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
@@ -135,9 +135,9 @@ def preprocess_files():
         to_file(out_fpath, clean_items(item_stream=
                                        filter(lambda item: detect(
                                            item['text']) == 'en',
-                                              pool.map(preprocess,
-                                                  stream_normalized_contribution(
-                                                      fpath))),
+                                              pool.map_async(preprocess,
+                                                       stream_normalized_contribution(
+                                                           fpath))),
                                        text_field='preprocessed_text',
                                        cleaned_text_field='processed_text',
                                        remove_punct=True, remove_digit=True,
@@ -154,9 +154,9 @@ def preprocess_files():
         to_file(out_fpath, clean_items(item_stream=
                                        filter(lambda item: detect(
                                            item['text']) == 'en',
-                                              pool.map(preprocess,
-                                                  stream_normalized_contribution(
-                                                      fpath))),
+                                              pool.map_async(preprocess,
+                                                       stream_normalized_contribution(
+                                                           fpath))),
                                        text_field='preprocessed_text',
                                        cleaned_text_field='processed_text',
                                        remove_punct=True, remove_digit=True,
@@ -172,9 +172,9 @@ def preprocess_files():
         to_file(out_fpath, clean_items(item_stream=
                                        filter(lambda item: detect(
                                            item['text']) == 'en',
-                                              pool.map(preprocess,
-                                                  stream_normalized_contribution(
-                                                      fpath))),
+                                              pool.map_async(preprocess,
+                                                       stream_normalized_contribution(
+                                                           fpath))),
                                        text_field='preprocessed_text',
                                        cleaned_text_field='processed_text',
                                        remove_punct=True, remove_digit=True,
@@ -183,6 +183,8 @@ def preprocess_files():
                                        lemmatize=True, lowercase=True,
                                        n_process=-1
                                        ))
+
+
 class MyCorpus:
     """An iterator that yields sentences (lists of str)."""
 
