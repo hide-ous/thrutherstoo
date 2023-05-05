@@ -65,12 +65,28 @@ def detect_language(item, language='en', text_field='text'):
     except:
         return (False, item)
 
+
 def filter_language(item_stream, language='en', text_field='text',
                     n_processors=40):
     with Pool(n_processors) as pool:
         for keep, item in pool.imap(
                 partial(detect_language, language=language,
                         text_field=text_field),
+                item_stream):
+            if keep:
+                yield item
+
+
+def detect_discussions(item, filter_values, filter_field):
+    return (item[filter_field] in filter_values, item)
+
+
+def filter_discussions(item_stream, discussions,
+                       n_processors=40, filter_field='link_fullname'):
+    with Pool(n_processors) as pool:
+        for keep, item in pool.imap_unordered(
+                partial(detect_discussions, filter_values=discussions,
+                        filter_field=filter_field),
                 item_stream):
             if keep:
                 yield item
@@ -94,9 +110,8 @@ def preprocess_files():
     default_sample_fpath = os.path.join(project_dir, 'data', 'interim',
                                         f'sample_contributions_{k}_default.jsonl')
 
-    fpath = labeling_fpath
-    out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
-
+    # fpath = labeling_fpath
+    # out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
     # to_file(out_fpath, clean_items(item_stream=
     #                                filter(lambda item: re.findall(
     #                                    CONSPIRACY_THEORIST_RE,
@@ -114,30 +129,14 @@ def preprocess_files():
     #                                n_process=-1
     #                                ))
 
-    # # read discussions filtered after preprocessing
-    # discussion_id_fpath = os.path.join(interim_dir, 'discussion_ids.pkl')
-    # if os.path.exists(discussion_id_fpath):
-    #     with open(discussion_id_fpath, 'rb') as f:
-    #         discussions = pickle.load(f)
-    # else:
-    #     with open(out_fpath, encoding='utf8') as f:
-    #         discussions = set(
-    #             i['link_fullname'] for i in
-    #             # i['name'] if ('selftext' in i) else i['link_id'] for i in
-    #             map(json.loads, f))
-    #     with open(discussion_id_fpath, 'wb+') as f:
-    #         pickle.dump(discussions, f)
-    # print(f'loaded {len(discussions)} discussion ids')
-    # fpath = discussion_fpath
+    # fpath = sample_fpath
     # out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
-    # # preprocess only filtered discussions
+    # # keep only English contributions in the random sample
     # with Pool(40) as pool:
-    #     to_file(out_fpath, clean_items(item_stream=
-    #                                    pool.map_async(preprocess,
-    #                                                   filter(lambda item: item[
-    #                                                                           'link_fullname'] in discussions,
-    #                                                          stream_normalized_contribution(
-    #                                                              fpath))),
+    #     to_file(out_fpath, clean_items(item_stream=filter_language(
+    #           pool.imap_unordered(preprocess,
+    #                               stream_normalized_contribution(
+    #                                   fpath))),
     #                                    text_field='preprocessed_text',
     #                                    cleaned_text_field='processed_text',
     #                                    remove_punct=True, remove_digit=True,
@@ -147,15 +146,13 @@ def preprocess_files():
     #                                    n_process=-1
     #                                    ))
 
-    fpath = sample_fpath
+    fpath = ct_sample_fpath
     out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
-
-    # keep only English contributions in the random sample
     with Pool(40) as pool:
-        to_file(out_fpath, clean_items(item_stream=filter_language(
-              pool.imap_unordered(preprocess,
-                                  stream_normalized_contribution(
-                                      fpath))),
+        to_file(out_fpath, clean_items(item_stream=
+                                       pool.imap_unordered(preprocess,
+                                                           stream_normalized_contribution(
+                                                               fpath)),
                                        text_field='preprocessed_text',
                                        cleaned_text_field='processed_text',
                                        remove_punct=True, remove_digit=True,
@@ -164,57 +161,55 @@ def preprocess_files():
                                        lemmatize=True, lowercase=True,
                                        n_process=-1
                                        ))
-        # to_file(out_fpath, clean_items(item_stream=
-        #                                filter(lambda item: detect(
-        #                                    item['text']) == 'en',
-        #                                       pool.imap_unordered(preprocess,
-        #                                                           stream_normalized_contribution(
-        #                                                               fpath))),
-        #                                text_field='preprocessed_text',
-        #                                cleaned_text_field='processed_text',
-        #                                remove_punct=True, remove_digit=True,
-        #                                remove_stops=True,
-        #                                remove_pron=False,
-        #                                lemmatize=True, lowercase=True,
-        #                                n_process=-1
-        #                                ))
 
-    # fpath = ct_sample_fpath
-    # out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
-    # # keep only English contributions in the random sample
-    # with Pool(40) as pool:
-    #     to_file(out_fpath, clean_items(item_stream=
-    #                                    filter(lambda item: detect(
-    #                                        item['text']) == 'en',
-    #                                           pool.imap_unordered(preprocess,
-    #                                                    stream_normalized_contribution(
-    #                                                        fpath))),
-    #                                    text_field='preprocessed_text',
-    #                                    cleaned_text_field='processed_text',
-    #                                    remove_punct=True, remove_digit=True,
-    #                                    remove_stops=True,
-    #                                    remove_pron=False,
-    #                                    lemmatize=True, lowercase=True,
-    #                                    n_process=-1
-    #                                    ))
-    # fpath = default_sample_fpath
-    # out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
-    # # keep only English contributions in the random sample
-    # with Pool(40) as pool:
-    #     to_file(out_fpath, clean_items(item_stream=
-    #                                    filter(lambda item: detect(
-    #                                        item['text']) == 'en',
-    #                                           pool.imap_unordered(preprocess,
-    #                                                    stream_normalized_contribution(
-    #                                                        fpath))),
-    #                                    text_field='preprocessed_text',
-    #                                    cleaned_text_field='processed_text',
-    #                                    remove_punct=True, remove_digit=True,
-    #                                    remove_stops=True,
-    #                                    remove_pron=False,
-    #                                    lemmatize=True, lowercase=True,
-    #                                    n_process=-1
-    #                                    ))
+    fpath = default_sample_fpath
+    out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+    with Pool(40) as pool:
+        to_file(out_fpath, clean_items(item_stream=
+                                       pool.imap_unordered(preprocess,
+                                                           stream_normalized_contribution(
+                                                               fpath)),
+                                       text_field='preprocessed_text',
+                                       cleaned_text_field='processed_text',
+                                       remove_punct=True, remove_digit=True,
+                                       remove_stops=True,
+                                       remove_pron=False,
+                                       lemmatize=True, lowercase=True,
+                                       n_process=-1
+                                       ))
+
+    # read discussions filtered after preprocessing
+    discussion_id_fpath = os.path.join(interim_dir, 'discussion_ids.pkl')
+    if os.path.exists(discussion_id_fpath):
+        with open(discussion_id_fpath, 'rb') as f:
+            discussions = pickle.load(f)
+    else:
+        with open(out_fpath, encoding='utf8') as f:
+            discussions = set(
+                i['link_fullname'] for i in
+                # i['name'] if ('selftext' in i) else i['link_id'] for i in
+                map(json.loads, f))
+        with open(discussion_id_fpath, 'wb+') as f:
+            pickle.dump(discussions, f)
+    print(f'loaded {len(discussions)} discussion ids')
+    fpath = discussion_fpath
+    out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+    # preprocess only filtered discussions
+    with Pool(40) as pool:
+        to_file(out_fpath, clean_items(item_stream=
+                                       pool.imap_unordered(preprocess,
+                                                           filter_discussions(
+                                                               stream_normalized_contribution(
+                                                                   fpath),
+                                                               discussions)),
+                                       text_field='preprocessed_text',
+                                       cleaned_text_field='processed_text',
+                                       remove_punct=True, remove_digit=True,
+                                       remove_stops=True,
+                                       remove_pron=False,
+                                       lemmatize=True, lowercase=True,
+                                       n_process=-1
+                                       ))
 
 
 class MyCorpus:
@@ -245,7 +240,7 @@ def build_embeddings():
     for input_fpath in [labeling_fpath, sample_fpath]:
         with open(input_fpath, encoding='utf8') as f:
             for item in map(json.loads, f):
-                item_date = datetime.datetime.fromtimestamp(item['created_utc'])
+                item_date = datetime.datetime.fromtimestamp(float(item['created_utc']))
                 item_year = item_date.year
                 item_text = item['processed_text']
                 item_text = re.sub(r'conspiracy.theorists?',
@@ -276,4 +271,4 @@ def build_embeddings():
 
 if __name__ == '__main__':
     preprocess_files()
-    # build_embeddings()
+    build_embeddings()
