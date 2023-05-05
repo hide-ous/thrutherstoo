@@ -133,7 +133,7 @@ def preprocess_files():
     out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
     # keep only English contributions in the random sample
     with Pool(10) as pool:
-        for i in pool.imap_unordered(preprocess,islice(stream_normalized_contribution(fpath), 100)):
+        for i in pool.imap_unordered(preprocess,stream_normalized_contribution(fpath)):
             print(i)
 
         # to_file(out_fpath, map(lambda i:i.get(), ))
@@ -141,7 +141,7 @@ def preprocess_files():
     #     to_file(out_fpath, clean_items(item_stream=
     #                                    filter(lambda item: detect(
     #                                        item.get()['text']) == 'en',
-    #                                           pool.map_async(preprocess,
+    #                                           pool.imap_unordered(preprocess,
     #                                                    stream_normalized_contribution(
     #                                                        fpath))),
     #                                    text_field='preprocessed_text',
@@ -160,7 +160,7 @@ def preprocess_files():
     #     to_file(out_fpath, clean_items(item_stream=
     #                                    filter(lambda item: detect(
     #                                        item['text']) == 'en',
-    #                                           pool.map_async(preprocess,
+    #                                           pool.imap_unordered(preprocess,
     #                                                    stream_normalized_contribution(
     #                                                        fpath))),
     #                                    text_field='preprocessed_text',
@@ -178,7 +178,7 @@ def preprocess_files():
     #     to_file(out_fpath, clean_items(item_stream=
     #                                    filter(lambda item: detect(
     #                                        item['text']) == 'en',
-    #                                           pool.map_async(preprocess,
+    #                                           pool.imap_unordered(preprocess,
     #                                                    stream_normalized_contribution(
     #                                                        fpath))),
     #                                    text_field='preprocessed_text',
