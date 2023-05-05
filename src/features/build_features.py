@@ -61,17 +61,17 @@ def stream_normalized_contribution(fpath):
 
 def detect_language(item, language='en', text_field='text'):
     try:
-        return detect(item[text_field]) == language
+        return (detect(item[text_field]) == language, item)
     except:
-        return False
+        return (False, item)
 
 def filter_language(item_stream, language='en', text_field='text',
                     n_processors=40):
     with Pool(n_processors) as pool:
-        for item, keep in zip(item_stream, pool.imap(
+        for keep, item in pool.imap(
                 partial(detect_language, language=language,
                         text_field=text_field),
-                item_stream)):
+                item_stream):
             if keep:
                 yield item
 
