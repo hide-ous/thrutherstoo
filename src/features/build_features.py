@@ -60,8 +60,10 @@ def stream_normalized_contribution(fpath):
 
 
 def detect_language(item, language='en', text_field='text'):
-    return detect(item[text_field]) == language
-
+    try:
+        return detect(item[text_field]) == language
+    except:
+        return False
 
 def filter_language(item_stream, language='en', text_field='text',
                     n_processors=40):
@@ -150,8 +152,7 @@ def preprocess_files():
 
     # keep only English contributions in the random sample
     with Pool(40) as pool:
-        for item in filter(lambda item: detect(
-            item['text']) == 'en',
+        for item in filter_language(
               pool.imap_unordered(preprocess,
                                   stream_normalized_contribution(
                                       fpath))):
