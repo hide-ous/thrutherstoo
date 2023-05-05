@@ -4,6 +4,7 @@ import logging
 import os
 import pickle
 import re
+from itertools import islice
 from multiprocessing import Pool
 from pathlib import Path
 
@@ -132,7 +133,7 @@ def preprocess_files():
     out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
     # keep only English contributions in the random sample
 
-    for i in map(preprocess,stream_normalized_contribution(fpath)):
+    for i in islice(map(preprocess,stream_normalized_contribution(fpath)), 100):
         print(i)
         break
         # to_file(out_fpath, map(lambda i:i.get(), ))
@@ -249,4 +250,4 @@ def build_embeddings():
 
 if __name__ == '__main__':
     preprocess_files()
-    build_embeddings()
+    # build_embeddings()
