@@ -134,7 +134,7 @@ def preprocess_files():
     with Pool(40) as pool:
         to_file(out_fpath, clean_items(item_stream=
                                        filter(lambda item: detect(
-                                           item['text']) == 'en',
+                                           item.get()['text']) == 'en',
                                               pool.map_async(preprocess,
                                                        stream_normalized_contribution(
                                                            fpath))),
@@ -147,42 +147,42 @@ def preprocess_files():
                                        n_process=-1
                                        ))
 
-    fpath = ct_sample_fpath
-    out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
-    # keep only English contributions in the random sample
-    with Pool(40) as pool:
-        to_file(out_fpath, clean_items(item_stream=
-                                       filter(lambda item: detect(
-                                           item['text']) == 'en',
-                                              pool.map_async(preprocess,
-                                                       stream_normalized_contribution(
-                                                           fpath))),
-                                       text_field='preprocessed_text',
-                                       cleaned_text_field='processed_text',
-                                       remove_punct=True, remove_digit=True,
-                                       remove_stops=True,
-                                       remove_pron=False,
-                                       lemmatize=True, lowercase=True,
-                                       n_process=-1
-                                       ))
-    fpath = default_sample_fpath
-    out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
-    # keep only English contributions in the random sample
-    with Pool(40) as pool:
-        to_file(out_fpath, clean_items(item_stream=
-                                       filter(lambda item: detect(
-                                           item['text']) == 'en',
-                                              pool.map_async(preprocess,
-                                                       stream_normalized_contribution(
-                                                           fpath))),
-                                       text_field='preprocessed_text',
-                                       cleaned_text_field='processed_text',
-                                       remove_punct=True, remove_digit=True,
-                                       remove_stops=True,
-                                       remove_pron=False,
-                                       lemmatize=True, lowercase=True,
-                                       n_process=-1
-                                       ))
+    # fpath = ct_sample_fpath
+    # out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+    # # keep only English contributions in the random sample
+    # with Pool(40) as pool:
+    #     to_file(out_fpath, clean_items(item_stream=
+    #                                    filter(lambda item: detect(
+    #                                        item['text']) == 'en',
+    #                                           pool.map_async(preprocess,
+    #                                                    stream_normalized_contribution(
+    #                                                        fpath))),
+    #                                    text_field='preprocessed_text',
+    #                                    cleaned_text_field='processed_text',
+    #                                    remove_punct=True, remove_digit=True,
+    #                                    remove_stops=True,
+    #                                    remove_pron=False,
+    #                                    lemmatize=True, lowercase=True,
+    #                                    n_process=-1
+    #                                    ))
+    # fpath = default_sample_fpath
+    # out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+    # # keep only English contributions in the random sample
+    # with Pool(40) as pool:
+    #     to_file(out_fpath, clean_items(item_stream=
+    #                                    filter(lambda item: detect(
+    #                                        item['text']) == 'en',
+    #                                           pool.map_async(preprocess,
+    #                                                    stream_normalized_contribution(
+    #                                                        fpath))),
+    #                                    text_field='preprocessed_text',
+    #                                    cleaned_text_field='processed_text',
+    #                                    remove_punct=True, remove_digit=True,
+    #                                    remove_stops=True,
+    #                                    remove_pron=False,
+    #                                    lemmatize=True, lowercase=True,
+    #                                    n_process=-1
+    #                                    ))
 
 
 class MyCorpus:
