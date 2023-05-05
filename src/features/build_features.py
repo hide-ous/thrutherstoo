@@ -5,7 +5,7 @@ import os
 import pickle
 import re
 from itertools import islice
-from multiprocessing import Pool
+from multiprocessing.pool import Pool
 from pathlib import Path
 
 from gensim.models import Word2Vec
