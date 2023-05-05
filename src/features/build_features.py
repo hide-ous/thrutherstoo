@@ -154,8 +154,8 @@ def preprocess_files():
             item['text']) == 'en',
               pool.imap_unordered(preprocess,
                                   stream_normalized_contribution(
-                                      fpath)):
-            print(item))
+                                      fpath))):
+            print(item)
         # to_file(out_fpath, clean_items(item_stream=
         #                                filter(lambda item: detect(
         #                                    item['text']) == 'en',
