@@ -132,9 +132,9 @@ def preprocess_files():
     fpath = sample_fpath
     out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
     # keep only English contributions in the random sample
-
-    for i in islice(map(preprocess,stream_normalized_contribution(fpath)), 100):
-        print(i)
+    with Pool(10) as pool:
+        for i in islice(pool.map(preprocess,stream_normalized_contribution(fpath)), 100):
+            print(i)
 
         # to_file(out_fpath, map(lambda i:i.get(), ))
     # with Pool(40) as pool:
