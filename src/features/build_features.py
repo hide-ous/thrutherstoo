@@ -131,9 +131,10 @@ def preprocess_files():
     fpath = sample_fpath
     out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
     # keep only English contributions in the random sample
-    with Pool(40) as pool:
-        for i in pool.map_async(preprocess,stream_normalized_contribution(fpath)):
-            print(i.get())
+
+    for i in map(preprocess,stream_normalized_contribution(fpath)):
+        print(i)
+        break
         # to_file(out_fpath, map(lambda i:i.get(), ))
     # with Pool(40) as pool:
     #     to_file(out_fpath, clean_items(item_stream=
