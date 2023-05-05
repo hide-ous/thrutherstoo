@@ -135,7 +135,7 @@ def preprocess_files():
 
     for i in islice(map(preprocess,stream_normalized_contribution(fpath)), 100):
         print(i)
-        break
+
         # to_file(out_fpath, map(lambda i:i.get(), ))
     # with Pool(40) as pool:
     #     to_file(out_fpath, clean_items(item_stream=
