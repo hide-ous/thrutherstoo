@@ -152,11 +152,18 @@ def preprocess_files():
 
     # keep only English contributions in the random sample
     with Pool(40) as pool:
-        for item in filter_language(
+        to_file(out_fpath, clean_items(item_stream=filter_language(
               pool.imap_unordered(preprocess,
                                   stream_normalized_contribution(
-                                      fpath))):
-            pass
+                                      fpath))),
+                                       text_field='preprocessed_text',
+                                       cleaned_text_field='processed_text',
+                                       remove_punct=True, remove_digit=True,
+                                       remove_stops=True,
+                                       remove_pron=False,
+                                       lemmatize=True, lowercase=True,
+                                       n_process=-1
+                                       ))
         # to_file(out_fpath, clean_items(item_stream=
         #                                filter(lambda item: detect(
         #                                    item['text']) == 'en',
