@@ -146,37 +146,37 @@ def preprocess_files():
     #                                    n_process=-1
     #                                    ))
 
-    fpath = ct_sample_fpath
-    out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
-    with Pool(40) as pool:
-        to_file(out_fpath, clean_items(item_stream=
-                                       pool.imap_unordered(preprocess,
-                                                           stream_normalized_contribution(
-                                                               fpath)),
-                                       text_field='preprocessed_text',
-                                       cleaned_text_field='processed_text',
-                                       remove_punct=True, remove_digit=True,
-                                       remove_stops=True,
-                                       remove_pron=False,
-                                       lemmatize=True, lowercase=True,
-                                       n_process=-1
-                                       ))
-
-    fpath = default_sample_fpath
-    out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
-    with Pool(40) as pool:
-        to_file(out_fpath, clean_items(item_stream=
-                                       pool.imap_unordered(preprocess,
-                                                           stream_normalized_contribution(
-                                                               fpath)),
-                                       text_field='preprocessed_text',
-                                       cleaned_text_field='processed_text',
-                                       remove_punct=True, remove_digit=True,
-                                       remove_stops=True,
-                                       remove_pron=False,
-                                       lemmatize=True, lowercase=True,
-                                       n_process=-1
-                                       ))
+    # fpath = ct_sample_fpath
+    # out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+    # with Pool(40) as pool:
+    #     to_file(out_fpath, clean_items(item_stream=
+    #                                    pool.imap_unordered(preprocess,
+    #                                                        stream_normalized_contribution(
+    #                                                            fpath)),
+    #                                    text_field='preprocessed_text',
+    #                                    cleaned_text_field='processed_text',
+    #                                    remove_punct=True, remove_digit=True,
+    #                                    remove_stops=True,
+    #                                    remove_pron=False,
+    #                                    lemmatize=True, lowercase=True,
+    #                                    n_process=-1
+    #                                    ))
+    #
+    # fpath = default_sample_fpath
+    # out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+    # with Pool(40) as pool:
+    #     to_file(out_fpath, clean_items(item_stream=
+    #                                    pool.imap_unordered(preprocess,
+    #                                                        stream_normalized_contribution(
+    #                                                            fpath)),
+    #                                    text_field='preprocessed_text',
+    #                                    cleaned_text_field='processed_text',
+    #                                    remove_punct=True, remove_digit=True,
+    #                                    remove_stops=True,
+    #                                    remove_pron=False,
+    #                                    lemmatize=True, lowercase=True,
+    #                                    n_process=-1
+    #                                    ))
 
     # read discussions filtered after preprocessing
     discussion_id_fpath = os.path.join(interim_dir, 'discussion_ids.pkl')
@@ -184,6 +184,8 @@ def preprocess_files():
         with open(discussion_id_fpath, 'rb') as f:
             discussions = pickle.load(f)
     else:
+        fpath = labeling_fpath
+        out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
         with open(out_fpath, encoding='utf8') as f:
             discussions = set(
                 i['link_fullname'] for i in
@@ -226,13 +228,57 @@ class MyCorpus:
 
 
 def build_embeddings():
-    log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    logging.basicConfig(level=logging.INFO, format=log_fmt)
+    # log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    # logging.basicConfig(level=logging.INFO, format=log_fmt)
     logger = logging.getLogger()
     # prepare input for the embeddings
     project_dir = Path(__file__).resolve().parents[2]
 
     interim_dir = os.path.join(project_dir, 'data', 'interim')
+
+    # train embeddings
+    os.makedirs(os.path.join(interim_dir, 'embeddings'), exist_ok=True)
+    for dirname in os.listdir(os.path.join(interim_dir, 'text_years')):
+        for fname in os.listdir(
+                os.path.join(interim_dir, 'text_years', dirname)):
+
+            fpath = os.path.join(interim_dir, 'text_years', dirname, fname)
+            logger.info(f"training vectors for {fpath}")
+            try:
+                Word2Vec.load(
+                    os.path.join(interim_dir, 'embeddings', dirname,
+                                 f"word2vec_{year}.model"))
+                KeyedVectors.load(os.path.join(interim_dir, 'embeddings', dirname,
+                                                   f"word2vec_{year}.wordvectors"))
+                print(f'skipping: {fpath} already used for training')
+            except:
+
+                year = int(fpath[-len('.csv') - 4:-len('.csv')])
+                corpus = MyCorpus(fpath)
+                try:
+
+                    model = Word2Vec(sentences=corpus, seed=42, epochs=10, workers=-1)
+                    os.makedirs(os.path.join(interim_dir, 'embeddings', dirname),
+                                exist_ok=True)
+
+                    model.save(
+                        os.path.join(interim_dir, 'embeddings', dirname,
+                                     f"word2vec_{year}.model"))
+                    word_vectors = model.wv
+                    word_vectors.save(os.path.join(interim_dir, 'embeddings', dirname,
+                                                   f"word2vec_{year}.wordvectors"))
+
+                except RuntimeError as e:
+                    print(e)
+
+
+def separate_contributions_by_year():
+    logger = logging.getLogger()
+    # prepare input for the embeddings
+    project_dir = Path(__file__).resolve().parents[2]
+
+    interim_dir = os.path.join(project_dir, 'data', 'interim')
+
     labeling_fpath = os.path.join(interim_dir,
                                   'labeling_contributions_preprocessed.jsonl')
     k = 100000
@@ -273,41 +319,10 @@ def build_embeddings():
         for ff in out_fhandles.values():
             ff.close()
 
-    # train embeddings
-    os.makedirs(os.path.join(interim_dir, 'embeddings'), exist_ok=True)
-    for dirname in os.listdir(os.path.join(interim_dir, 'text_years')):
-        for fname in os.listdir(
-                os.path.join(interim_dir, 'text_years', dirname)):
-
-            fpath = os.path.join(interim_dir, 'text_years', dirname, fname)
-            logger.info(f"training vectors for {fpath}")
-            try:
-                Word2Vec.load(
-                    os.path.join(interim_dir, 'embeddings', dirname,
-                                 f"word2vec_{year}.model"))
-                KeyedVectors.load(os.path.join(interim_dir, 'embeddings', dirname,
-                                                   f"word2vec_{year}.wordvectors"))
-                print(f'skipping: {fpath} already used for training')
-            except:
-
-                year = int(fpath[-len('.csv') - 4:-len('.csv')])
-                corpus = MyCorpus(fpath)
-                try:
-
-                    model = Word2Vec(sentences=corpus, seed=42, epochs=10)
-                    os.makedirs(os.path.join(interim_dir, 'embeddings', dirname),
-                                exist_ok=True)
-
-                    model.save(
-                        os.path.join(interim_dir, 'embeddings', dirname,
-                                     f"word2vec_{year}.model"))
-                    word_vectors = model.wv
-                    word_vectors.save(os.path.join(interim_dir, 'embeddings', dirname,
-                                                   f"word2vec_{year}.wordvectors"))
-
-                except RuntimeError as e:
-                    print(e)
 
 if __name__ == '__main__':
-    # preprocess_files()
-    build_embeddings()
+    log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    logging.basicConfig(level=logging.INFO, format=log_fmt)
+    preprocess_files()
+    # separate_contributions_by_year()
+    # build_embeddings()
