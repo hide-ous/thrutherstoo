@@ -257,7 +257,7 @@ def build_embeddings():
                 corpus = MyCorpus(fpath)
                 try:
 
-                    model = Word2Vec(sentences=corpus, seed=42, epochs=10, workers=-1)
+                    model = Word2Vec(sentences=corpus, seed=42, epochs=10, workers=40)
                     os.makedirs(os.path.join(interim_dir, 'embeddings', dirname),
                                 exist_ok=True)
 
