@@ -226,6 +226,9 @@ class MyCorpus:
 
 
 def build_embeddings():
+    log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    logging.basicConfig(level=logging.INFO, format=log_fmt)
+    logger = logging.getLogger()
     # prepare input for the embeddings
     project_dir = Path(__file__).resolve().parents[2]
 
@@ -246,6 +249,10 @@ def build_embeddings():
                                      ("ct_sample", ct_sample_fpath),
                                      ("default_sample", default_sample_fpath)]:
         with open(input_fpath, encoding='utf8') as f:
+            os.makedirs(os.path.join(interim_dir, 'text_years', folder_name),
+                        exist_ok=True)
+            logger.info(
+                f"preparing {os.path.join(interim_dir, 'text_years', folder_name)}")
             for item in map(json.loads, f):
                 item_date = datetime.datetime.fromtimestamp(
                     float(item['created_utc']))
@@ -255,9 +262,12 @@ def build_embeddings():
                                    'conspiracy_theorist', item_text,
                                    flags=re.I | re.U | re.DOTALL | re.M)
                 if item_year not in out_fhandles:
-                    out_fhandles[item_year] = open(
-                        os.path.join(interim_dir, 'text_years', folder_name,
-                                     f'{item_year}.csv'), "w+", encoding='utf8')
+                    year_path = os.path.join(interim_dir, 'text_years',
+                                             folder_name,
+                                             f'{item_year}.csv')
+                    out_fhandles[item_year] = open(year_path
+                                                   , "w+", encoding='utf8')
+                    logger.info(f"opening {year_path}")
                 ff = out_fhandles[item_year]
                 ff.write(item_text + '\n')
     for ff in out_fhandles.values():
@@ -266,15 +276,21 @@ def build_embeddings():
     # train embeddings
     os.makedirs(os.path.join(interim_dir, 'embeddings'), exist_ok=True)
     for dirname in os.listdir(os.path.join(interim_dir, 'text_years')):
-        for fname in os.listdir(os.path.join(interim_dir, 'text_years', dirname)):
+        for fname in os.listdir(
+                os.path.join(interim_dir, 'text_years', dirname)):
             fpath = os.path.join(interim_dir, 'text_years', dirname, fname)
+            logger.info(f"training vectors for {fpath}")
             year = int(fpath[-len('.csv') - 4:-len('.csv')])
             corpus = MyCorpus(fpath)
             model = Word2Vec(sentences=corpus, seed=42, epochs=10)
+            os.makedirs(os.path.join(interim_dir, 'embeddings', dirname),
+                        exist_ok=True)
+
             model.save(
-                os.path.join(interim_dir, 'embeddings', f"word2vec_{year}.model"))
+                os.path.join(interim_dir, 'embeddings', dirname,
+                             f"word2vec_{year}.model"))
             word_vectors = model.wv
-            word_vectors.save(os.path.join(interim_dir, 'embeddings',
+            word_vectors.save(os.path.join(interim_dir, 'embeddings', dirname,
                                            f"word2vec_{year}.wordvectors"))
 
 
