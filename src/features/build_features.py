@@ -242,12 +242,12 @@ def build_embeddings():
                                    f'sample_contributions_{k}_ct_preprocessed.jsonl')
     default_sample_fpath = os.path.join(project_dir, 'data', 'interim',
                                         f'sample_contributions_{k}_default_preprocessed.jsonl')
-    out_fhandles = dict()
     os.makedirs(os.path.join(interim_dir, 'text_years'), exist_ok=True)
     for folder_name, input_fpath in [("labeling", labeling_fpath),
                                      ("sample", sample_fpath),
                                      ("ct_sample", ct_sample_fpath),
                                      ("default_sample", default_sample_fpath)]:
+        out_fhandles = dict()
         with open(input_fpath, encoding='utf8') as f:
             os.makedirs(os.path.join(interim_dir, 'text_years', folder_name),
                         exist_ok=True)
@@ -270,8 +270,8 @@ def build_embeddings():
                     logger.info(f"opening {year_path}")
                 ff = out_fhandles[item_year]
                 ff.write(item_text + '\n')
-    for ff in out_fhandles.values():
-        ff.close()
+        for ff in out_fhandles.values():
+            ff.close()
 
     # train embeddings
     os.makedirs(os.path.join(interim_dir, 'embeddings'), exist_ok=True)
