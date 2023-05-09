@@ -92,8 +92,8 @@ def detect_multiple_discussions(items, filter_values, filter_field):
 
 
 def chunkize_iter(in_stream, chunk_size=1000):
-    while len(chunk := list(in_stream(in_stream, chunk_size))):
-        yield list(chunk)
+    while len(chunk := list(islice(in_stream, chunk_size))):
+        yield chunk
 
 
 def filter_discussions(item_stream, discussions,
