@@ -55,8 +55,8 @@ def preprocess(item, text_field='text', preprocessed_field='preprocessed_text'):
 
 
 def stream_normalized_contribution(fpath):
-    with open(fpath, encoding='utf8') as f:
-        yield from map(normalize_text, map(json.loads, f))
+    with open(fpath, encoding='utf8') as f, Pool(40) as pool:
+        yield from pool.imap_unordered(normalize_text, map(json.loads, f))
 
 
 def detect_language(item, language='en', text_field='text'):
@@ -97,8 +97,8 @@ def filter_discussions(item_stream, discussions,
             item_stream):
         if keep:
             yield item
-        else:
-            print(item[filter_field], )
+        # else:
+        #     print(item[filter_field], )
 
 def preprocess_files():
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
