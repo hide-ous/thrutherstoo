@@ -61,8 +61,10 @@ def parse_and_normalize(item_str):
 
 
 def stream_normalized_contribution(fpath):
-    with open(fpath, encoding='utf8') as f, Pool(40) as pool:
-        yield from pool.imap_unordered(parse_and_normalize, f)
+    # with open(fpath, encoding='utf8') as f, Pool(40) as pool:
+    #     yield from pool.imap_unordered(parse_and_normalize, f)
+    with open(fpath, encoding='utf8') as f:
+        yield from map(parse_and_normalize, f)
 
 
 def detect_language(item, language='en', text_field='text'):
