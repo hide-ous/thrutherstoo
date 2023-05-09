@@ -13,7 +13,8 @@ from pathlib import Path
 from gensim.models import Word2Vec, KeyedVectors
 from gensim.test.utils import datapath
 
-from src.data.make_dataset import CONSPIRACY_THEORIST_RE, CONSPIRACY_SUBREDDITS, DEFAULT_SUBREDDITS
+from src.data.make_dataset import CONSPIRACY_THEORIST_RE, CONSPIRACY_SUBREDDITS, \
+    DEFAULT_SUBREDDITS
 from src.features.preprocess_text import clean_items, preprocess_pre_tokenizing
 from src.utils import to_file
 
@@ -85,12 +86,26 @@ def filter_language(item_stream, language='en', text_field='text',
 def detect_discussions(item, filter_values, filter_field):
     return (item[filter_field] in filter_values, item)
 
+
 def detect_multiple_discussions(items, filter_values, filter_field):
     return [item for item in items if item[filter_field] in filter_values]
 
 
+def chunkize_iter(in_stream, chunk_size=1000):
+    while len(chunk := list(in_stream(in_stream, chunk_size))):
+        yield list(chunk)
+
+
 def filter_discussions(item_stream, discussions,
-                       n_processors=40, filter_field='link_fullname'):
+                       n_processors=40, filter_field='link_fullname',
+                       chunk_size=10000):
+    with Pool(n_processors) as pool:
+        for items in pool.imap_unordered(
+                partial(detect_multiple_discussions, filter_values=discussions,
+                        filter_field=filter_field),
+                chunkize_iter(item_stream, chunk_size=chunk_size)):
+            yield from items
+
     # with Pool(n_processors) as pool:
     #     for keep, item in pool.imap_unordered(
     #             partial(detect_discussions, filter_values=discussions,
@@ -99,14 +114,14 @@ def filter_discussions(item_stream, discussions,
     #         if keep:
     #             yield item
 
-    for keep, item in map(
-            partial(detect_discussions, filter_values=discussions,
-                    filter_field=filter_field),
-            item_stream):
-        if keep:
-            yield item
-        # else:
-        #     print(item[filter_field], )
+    # for keep, item in map(
+    #         partial(detect_discussions, filter_values=discussions,
+    #                 filter_field=filter_field),
+    #         item_stream):
+    #     if keep:
+    #         yield item
+    #     # else:
+    #     #     print(item[filter_field], )
 
 
 def preprocess_files():
@@ -272,8 +287,9 @@ def build_embeddings():
                 Word2Vec.load(
                     os.path.join(interim_dir, 'embeddings', dirname,
                                  f"word2vec_{year}.model"))
-                KeyedVectors.load(os.path.join(interim_dir, 'embeddings', dirname,
-                                               f"word2vec_{year}.wordvectors"))
+                KeyedVectors.load(
+                    os.path.join(interim_dir, 'embeddings', dirname,
+                                 f"word2vec_{year}.wordvectors"))
                 print(f'skipping: {fpath} already used for training')
             except Exception as e:
                 print(f'cannot load vectors for {fpath}')
@@ -281,16 +297,19 @@ def build_embeddings():
                 corpus = MyCorpus(fpath)
                 try:
 
-                    model = Word2Vec(sentences=corpus, seed=42, epochs=10, workers=40)
-                    os.makedirs(os.path.join(interim_dir, 'embeddings', dirname),
-                                exist_ok=True)
+                    model = Word2Vec(sentences=corpus, seed=42, epochs=10,
+                                     workers=40)
+                    os.makedirs(
+                        os.path.join(interim_dir, 'embeddings', dirname),
+                        exist_ok=True)
 
                     model.save(
                         os.path.join(interim_dir, 'embeddings', dirname,
                                      f"word2vec_{year}.model"))
                     word_vectors = model.wv
-                    word_vectors.save(os.path.join(interim_dir, 'embeddings', dirname,
-                                                   f"word2vec_{year}.wordvectors"))
+                    word_vectors.save(
+                        os.path.join(interim_dir, 'embeddings', dirname,
+                                     f"word2vec_{year}.wordvectors"))
 
                 except RuntimeError as e:
                     print(e)
@@ -358,28 +377,34 @@ def merge_samples_with_labeling_contributions():
     for dirname in os.listdir(os.path.join(interim_dir, 'text_years')):
         if dirname == 'labeling':
             continue
-        os.makedirs(os.path.join(interim_dir, 'text_years', dirname + '_and_labeling'),
-                    exist_ok=True)
+        os.makedirs(
+            os.path.join(interim_dir, 'text_years', dirname + '_and_labeling'),
+            exist_ok=True)
         for fname in os.listdir(
                 os.path.join(interim_dir, 'text_years', dirname)):
-            labeling_fpath = os.path.join(interim_dir, 'text_years', 'labeling', fname)
-            regular_fpath = os.path.join(interim_dir, 'text_years', dirname, fname)
-            out_fpath = os.path.join(interim_dir, 'text_years', dirname + '_and_labeling', fname)
+            labeling_fpath = os.path.join(interim_dir, 'text_years', 'labeling',
+                                          fname)
+            regular_fpath = os.path.join(interim_dir, 'text_years', dirname,
+                                         fname)
+            out_fpath = os.path.join(interim_dir, 'text_years',
+                                     dirname + '_and_labeling', fname)
             logger.info(f"merging labeling contribusions for {dirname}/{fname}")
             with open(labeling_fpath, encoding='utf8') as f:
                 labeling_contribs = list(f)
                 if dirname.startswith('ct'):
-                    labeling_contribs = filter(lambda x: x['subreddit'] in CONSPIRACY_SUBREDDITS, labeling_contribs)
+                    labeling_contribs = filter(
+                        lambda x: x['subreddit'] in CONSPIRACY_SUBREDDITS,
+                        labeling_contribs)
                 elif dirname.startswith('default'):
-                    labeling_contribs = filter(lambda x: x['subreddit'] in DEFAULT_SUBREDDITS, labeling_contribs)
+                    labeling_contribs = filter(
+                        lambda x: x['subreddit'] in DEFAULT_SUBREDDITS,
+                        labeling_contribs)
             with open(regular_fpath, encoding='utf8') as f:
                 regular_contribs = list(f)
-            contribs = regular_contribs+labeling_contribs
+            contribs = regular_contribs + labeling_contribs
             random.shuffle(contribs)
             with open(out_fpath, "w+", encoding='utf8') as f:
                 f.write('\n'.join(contribs))
-
-
 
 
 if __name__ == '__main__':
