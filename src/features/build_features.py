@@ -54,9 +54,13 @@ def preprocess(item, text_field='text', preprocessed_field='preprocessed_text'):
     return item
 
 
+def parse_and_normalize(item_str):
+    return normalize_text(json.loads(item_str))
+
+
 def stream_normalized_contribution(fpath):
     with open(fpath, encoding='utf8') as f, Pool(40) as pool:
-        yield from pool.imap_unordered(normalize_text, map(json.loads, f))
+        yield from pool.imap_unordered(parse_and_normalize, f)
 
 
 def detect_language(item, language='en', text_field='text'):
@@ -99,6 +103,7 @@ def filter_discussions(item_stream, discussions,
             yield item
         # else:
         #     print(item[filter_field], )
+
 
 def preprocess_files():
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -206,9 +211,9 @@ def preprocess_files():
     out_fpath = os.path.splitext(fpath)[0] + '_filtered.jsonl'
     # preprocess only filtered discussions
     to_file(out_fpath, filter_discussions(
-                                                           stream_normalized_contribution(
-                                                               fpath),
-                                                           discussions))
+        stream_normalized_contribution(
+            fpath),
+        discussions))
 
     # preprocess only filtered discussions
     fpath = out_fpath
@@ -217,7 +222,7 @@ def preprocess_files():
         to_file(out_fpath, clean_items(item_stream=
                                        pool.imap_unordered(preprocess,
                                                            map(json.loads, f),
-                                                               discussions),
+                                                           discussions),
                                        text_field='preprocessed_text',
                                        cleaned_text_field='processed_text',
                                        remove_punct=True, remove_digit=True,
@@ -226,6 +231,7 @@ def preprocess_files():
                                        lemmatize=True, lowercase=True,
                                        n_process=-1
                                        ))
+
 
 class MyCorpus:
     """An iterator that yields sentences (lists of str)."""
@@ -263,7 +269,7 @@ def build_embeddings():
                     os.path.join(interim_dir, 'embeddings', dirname,
                                  f"word2vec_{year}.model"))
                 KeyedVectors.load(os.path.join(interim_dir, 'embeddings', dirname,
-                                                   f"word2vec_{year}.wordvectors"))
+                                               f"word2vec_{year}.wordvectors"))
                 print(f'skipping: {fpath} already used for training')
             except:
 
