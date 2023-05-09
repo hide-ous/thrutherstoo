@@ -26,8 +26,7 @@ DEFAULT_SUBREDDITS = ["AskReddit","announcements","funny","pics","todayilearned"
 # @click.argument('input_filepath', type=click.Path(exists=True))
 # @click.argument('output_filepath', type=click.Path())
 def main(input_filepath, output_filepath, text_field='body'):
-    """ Runs data processing scripts to turn raw data from (../raw) into
-        cleaned data ready to be analyzed (saved in ../processed).
+    """ finds contribusions that mention the term "conspiracy theorist(s)/conspiracist(s)"
     """
     logger = logging.getLogger(__name__)
     logger.info('search labeling instances')
@@ -145,6 +144,54 @@ def collect_discussions(input_fpath, output_dir,
         pool.map(filter_discussions_, args)
 
 
+
+def filter_authors_(args):
+    return filter_authors(*args)
+
+
+def filter_authors(input_filepath, output_filepath,
+                       filter_values):
+    logger = logging.getLogger(__name__)
+    logger.info('filtering authors')
+    logger.info(f'{input_filepath} to {output_filepath}')
+    with open(output_filepath, 'a+', encoding='utf8') as f:
+        for contribution in read_zst(input_filepath):
+            if ('selftext' in contribution) and ('name' not in contribution):
+                contribution['name'] = 't3_' + contribution['id']
+
+            if contribution['author'] in filter_values:
+                f.write(json.dumps(contribution) + '\n')
+
+
+def args_builder_authors(contribution_fpaths, output_dir, output_suffix,
+                             filter_values):
+    args = list()
+    for infile in contribution_fpaths:
+        outfile = os.path.split(infile)[-1][:-len('.zst')] + output_suffix
+        outfile = os.path.join(output_dir, outfile)
+        args.append((infile, outfile, filter_values))
+    return args
+
+
+def collect_authors(input_fpath, bot_fpath, output_dir,
+                        output_suffix='_labelers.jsonl'):
+    with open(input_fpath, encoding='utf8') as f:
+        authors = set(
+            i['author'] for i in
+            map(json.loads, f))
+
+    with open(bot_fpath, encoding='utf8') as f:
+        botnames = set(i.strip() for i in f.read().split('\n'))
+    authors = {author for author in authors if author not in botnames}
+    log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    logging.basicConfig(level=logging.INFO, format=log_fmt)
+
+    contribution_fpaths = get_contribution_fpaths()
+
+    with Pool(40) as pool:
+        args = args_builder_authors(contribution_fpaths, output_dir,
+                                        output_suffix, authors)
+        pool.map(filter_authors_, args)
 def get_contribution_fpaths():
     load_dotenv(find_dotenv())
     pushshift_dir = os.environ['PUSHSHIFT_DIR']
@@ -257,6 +304,7 @@ if __name__ == '__main__':
     # not used in this stub but often useful for finding various files
     project_dir = Path(__file__).resolve().parents[2]
     interim_dir = os.path.join(project_dir, 'data', 'interim')
+    raw_dir = os.path.join(project_dir, 'data', 'raw')
 
     # # find .env automagically by walking up directories until it's found, then
     # # load up the .env entries as environment variables
@@ -291,23 +339,36 @@ if __name__ == '__main__':
     #                   sample_fpath,
     #                   file_suffix=sample_suffix)
 
-    sample_suffix = '_sample_ct.jsonl'
-    k = 100000
-    sample_contributions(k=k, output_dir=interim_dir, output_suffix=sample_suffix, subreddits=CONSPIRACY_SUBREDDITS)
-    sample_fpath = os.path.join(project_dir, 'data', 'interim',
-                                f'sample_contributions_{k}_ct.jsonl')
-    consolidate_files(interim_dir,
-                      sample_fpath,
-                      file_suffix=sample_suffix)
+    # sample_suffix = '_sample_ct.jsonl'
+    # k = 100000
+    # sample_contributions(k=k, output_dir=interim_dir, output_suffix=sample_suffix, subreddits=CONSPIRACY_SUBREDDITS)
+    # sample_fpath = os.path.join(project_dir, 'data', 'interim',
+    #                             f'sample_contributions_{k}_ct.jsonl')
+    # consolidate_files(interim_dir,
+    #                   sample_fpath,
+    #                   file_suffix=sample_suffix)
+    #
+    # sample_suffix = '_sample_default.jsonl'
+    # k = 100000
+    # sample_contributions(k=k, output_dir=interim_dir, output_suffix=sample_suffix, subreddits=DEFAULT_SUBREDDITS)
+    # sample_fpath = os.path.join(project_dir, 'data', 'interim',
+    #                             f'sample_contributions_{k}_default.jsonl')
+    # consolidate_files(interim_dir,
+    #                   sample_fpath,
+    #                   file_suffix=sample_suffix)
 
-    sample_suffix = '_sample_default.jsonl'
-    k = 100000
-    sample_contributions(k=k, output_dir=interim_dir, output_suffix=sample_suffix, subreddits=DEFAULT_SUBREDDITS)
-    sample_fpath = os.path.join(project_dir, 'data', 'interim',
-                                f'sample_contributions_{k}_default.jsonl')
+
+    labeler_suffix = '_labelers.jsonl'
+    filtered_authors_fpath = os.path.join(interim_dir, 'labeling_contributions_preprocessed.jsonl')
+    collect_authors(input_fpath=filtered_authors_fpath,
+                    bot_fpath=os.path.join(raw_dir, 'botnames.txt'),
+                    output_dir=interim_dir,
+                    output_suffix=labeler_suffix)
+    labeler_fpath = os.path.join(project_dir, 'data', 'interim',
+                                f'labelers_all.jsonl')
     consolidate_files(interim_dir,
-                      sample_fpath,
-                      file_suffix=sample_suffix)
+                      labeler_fpath,
+                      file_suffix=labeler_suffix)
     # outfile = os.path.join(project_dir, 'data', 'interim',
     #                        'labeling_contributions.jsonl')
     # search_pushshift(store_path=outfile,
