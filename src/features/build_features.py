@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import pickle
+import random
 import re
 from functools import partial
 from itertools import islice
@@ -12,7 +13,7 @@ from pathlib import Path
 from gensim.models import Word2Vec, KeyedVectors
 from gensim.test.utils import datapath
 
-from src.data.make_dataset import CONSPIRACY_THEORIST_RE
+from src.data.make_dataset import CONSPIRACY_THEORIST_RE, CONSPIRACY_SUBREDDITS, DEFAULT_SUBREDDITS
 from src.features.preprocess_text import clean_items, preprocess_pre_tokenizing
 from src.utils import to_file
 
@@ -316,8 +317,8 @@ def separate_contributions_by_year():
         #                              ("sample", sample_fpath),
         #                              ("ct_sample", ct_sample_fpath),
         #                              ("default_sample", default_sample_fpath),
-                                     ("discussions", discussion_fpath)
-                                     ]:
+        ("discussions", discussion_fpath)
+    ]:
         out_fhandles = dict()
         with open(input_fpath, encoding='utf8') as f:
             os.makedirs(os.path.join(interim_dir, 'text_years', folder_name),
@@ -345,9 +346,43 @@ def separate_contributions_by_year():
             ff.close()
 
 
+def merge_samples_with_labeling_contributions():
+    logger = logging.getLogger()
+    # prepare input for the embeddings
+    project_dir = Path(__file__).resolve().parents[2]
+
+    interim_dir = os.path.join(project_dir, 'data', 'interim')
+    for dirname in os.listdir(os.path.join(interim_dir, 'text_years')):
+        if dirname == 'labeling':
+            continue
+        os.makedirs(os.path.join(interim_dir, 'text_years', dirname + '_and_labeling'),
+                    exist_ok=True)
+        for fname in os.listdir(
+                os.path.join(interim_dir, 'text_years', dirname)):
+            labeling_fpath = os.path.join(interim_dir, 'text_years', 'labeling', fname)
+            regular_fpath = os.path.join(interim_dir, 'text_years', dirname, fname)
+            out_fpath = os.path.join(interim_dir, 'text_years', dirname + '_and_labeling', fname)
+            logger.info(f"merging labeling contribusions for {dirname}/{fname}")
+            with open(labeling_fpath, encoding='utf8') as f:
+                labeling_contribs = list(f)
+                if dirname.startswith('ct'):
+                    labeling_contribs = filter(lambda x: x['subreddit'] in CONSPIRACY_SUBREDDITS, labeling_contribs)
+                elif dirname.startswith('default'):
+                    labeling_contribs = filter(lambda x: x['subreddit'] in DEFAULT_SUBREDDITS, labeling_contribs)
+            with open(regular_fpath, encoding='utf8') as f:
+                regular_contribs = list(f)
+            contribs = regular_contribs+labeling_contribs
+            random.shuffle(contribs)
+            with open(out_fpath, "w+", encoding='utf8') as f:
+                f.write('\n'.join(contribs))
+
+
+
+
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
     # preprocess_files()
     separate_contributions_by_year()
+    merge_samples_with_labeling_contributions()
     build_embeddings()
