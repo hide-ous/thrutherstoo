@@ -83,14 +83,22 @@ def detect_discussions(item, filter_values, filter_field):
 
 def filter_discussions(item_stream, discussions,
                        n_processors=40, filter_field='link_fullname'):
-    with Pool(n_processors) as pool:
-        for keep, item in pool.imap_unordered(
-                partial(detect_discussions, filter_values=discussions,
-                        filter_field=filter_field),
-                item_stream):
-            if keep:
-                yield item
+    # with Pool(n_processors) as pool:
+    #     for keep, item in pool.imap_unordered(
+    #             partial(detect_discussions, filter_values=discussions,
+    #                     filter_field=filter_field),
+    #             item_stream):
+    #         if keep:
+    #             yield item
 
+    for keep, item in map(
+            partial(detect_discussions, filter_values=discussions,
+                    filter_field=filter_field),
+            item_stream):
+        if keep:
+            yield item
+        else:
+            print(item[filter_field], )
 
 def preprocess_files():
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
