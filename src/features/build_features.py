@@ -195,15 +195,21 @@ def preprocess_files():
             pickle.dump(discussions, f)
     print(f'loaded {len(discussions)} discussion ids')
     fpath = discussion_fpath
-    out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+    out_fpath = os.path.splitext(fpath)[0] + '_filtered.jsonl'
     # preprocess only filtered discussions
-    with Pool(40) as pool:
+    to_file(out_fpath, filter_discussions(
+                                                           stream_normalized_contribution(
+                                                               fpath),
+                                                           discussions))
+
+    # preprocess only filtered discussions
+    fpath = out_fpath
+    out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+    with Pool(40) as pool, open(fpath, encoding='utf8') as f:
         to_file(out_fpath, clean_items(item_stream=
                                        pool.imap_unordered(preprocess,
-                                                           filter_discussions(
-                                                               stream_normalized_contribution(
-                                                                   fpath),
-                                                               discussions)),
+                                                           map(json.loads, f),
+                                                               discussions),
                                        text_field='preprocessed_text',
                                        cleaned_text_field='processed_text',
                                        remove_punct=True, remove_digit=True,
@@ -212,7 +218,6 @@ def preprocess_files():
                                        lemmatize=True, lowercase=True,
                                        n_process=-1
                                        ))
-
 
 class MyCorpus:
     """An iterator that yields sentences (lists of str)."""
