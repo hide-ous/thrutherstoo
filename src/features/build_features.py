@@ -101,12 +101,12 @@ def chunkize_iter(in_stream, chunk_size=1000):
 def filter_discussions(item_stream, discussions,
                        n_processors=40, filter_field='link_fullname',
                        chunk_size=10000):
-    with Pool(n_processors) as pool:
-        for items in pool.imap_unordered(
-                partial(detect_multiple_discussions, filter_values=discussions,
-                        filter_field=filter_field),
-                chunkize_iter(item_stream, chunk_size=chunk_size)):
-            yield from items
+    # with Pool(n_processors) as pool:
+    #     for items in pool.imap_unordered(
+    #             partial(detect_multiple_discussions, filter_values=discussions,
+    #                     filter_field=filter_field),
+    #             chunkize_iter(item_stream, chunk_size=chunk_size)):
+    #         yield from items
 
     # with Pool(n_processors) as pool:
     #     for keep, item in pool.imap_unordered(
@@ -116,14 +116,14 @@ def filter_discussions(item_stream, discussions,
     #         if keep:
     #             yield item
 
-    # for keep, item in map(
-    #         partial(detect_discussions, filter_values=discussions,
-    #                 filter_field=filter_field),
-    #         item_stream):
-    #     if keep:
-    #         yield item
-    #     # else:
-    #     #     print(item[filter_field], )
+    for keep, item in map(
+            partial(detect_discussions, filter_values=discussions,
+                    filter_field=filter_field),
+            item_stream):
+        if keep:
+            yield item
+        # else:
+        #     print(item[filter_field], )
 
 
 def preprocess_files():
