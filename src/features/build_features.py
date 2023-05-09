@@ -328,6 +328,6 @@ def separate_contributions_by_year():
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
-    # preprocess_files()
+    preprocess_files()
     # separate_contributions_by_year()
-    build_embeddings()
+    # build_embeddings()
