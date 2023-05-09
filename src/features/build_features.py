@@ -85,6 +85,9 @@ def filter_language(item_stream, language='en', text_field='text',
 def detect_discussions(item, filter_values, filter_field):
     return (item[filter_field] in filter_values, item)
 
+def detect_multiple_discussions(items, filter_values, filter_field):
+    return [item for item in items if item[filter_field] in filter_values]
+
 
 def filter_discussions(item_stream, discussions,
                        n_processors=40, filter_field='link_fullname'):
@@ -382,7 +385,7 @@ def merge_samples_with_labeling_contributions():
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
-    # preprocess_files()
+    preprocess_files()
     separate_contributions_by_year()
     merge_samples_with_labeling_contributions()
     build_embeddings()
