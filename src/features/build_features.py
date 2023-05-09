@@ -271,8 +271,9 @@ def build_embeddings():
                 KeyedVectors.load(os.path.join(interim_dir, 'embeddings', dirname,
                                                f"word2vec_{year}.wordvectors"))
                 print(f'skipping: {fpath} already used for training')
-            except:
-
+            except Exception as e:
+                print(f'cannot load vectors for {fpath}')
+                print(e)
                 corpus = MyCorpus(fpath)
                 try:
 
@@ -307,11 +308,16 @@ def separate_contributions_by_year():
                                    f'sample_contributions_{k}_ct_preprocessed.jsonl')
     default_sample_fpath = os.path.join(project_dir, 'data', 'interim',
                                         f'sample_contributions_{k}_default_preprocessed.jsonl')
+    discussion_fpath = os.path.join(interim_dir,
+                                    'labeling_discussions_all_filtered_preprocessed.jsonl')
     os.makedirs(os.path.join(interim_dir, 'text_years'), exist_ok=True)
-    for folder_name, input_fpath in [("labeling", labeling_fpath),
-                                     ("sample", sample_fpath),
-                                     ("ct_sample", ct_sample_fpath),
-                                     ("default_sample", default_sample_fpath)]:
+    for folder_name, input_fpath in [
+        # ("labeling", labeling_fpath),
+        #                              ("sample", sample_fpath),
+        #                              ("ct_sample", ct_sample_fpath),
+        #                              ("default_sample", default_sample_fpath),
+                                     ("discussions", discussion_fpath)
+                                     ]:
         out_fhandles = dict()
         with open(input_fpath, encoding='utf8') as f:
             os.makedirs(os.path.join(interim_dir, 'text_years', folder_name),
@@ -342,6 +348,6 @@ def separate_contributions_by_year():
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
-    preprocess_files()
-    # separate_contributions_by_year()
-    # build_embeddings()
+    # preprocess_files()
+    separate_contributions_by_year()
+    build_embeddings()
