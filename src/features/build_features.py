@@ -144,24 +144,31 @@ def preprocess_files():
     default_sample_fpath = os.path.join(project_dir, 'data', 'interim',
                                         f'sample_contributions_{k}_default.jsonl')
 
-    # fpath = labeling_fpath
-    # out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
-    # to_file(out_fpath, clean_items(item_stream=
-    #                                filter(lambda item: re.findall(
-    #                                    CONSPIRACY_THEORIST_RE,
-    #                                    item['preprocessed_text'],
-    #                                    flags=re.I | re.DOTALL | re.U | re.M),
-    #                                       map(preprocess,
-    #                                           stream_normalized_contribution(
-    #                                               fpath))),
-    #                                text_field='preprocessed_text',
-    #                                cleaned_text_field='processed_text',
-    #                                remove_punct=True, remove_digit=True,
-    #                                remove_stops=True,
-    #                                remove_pron=False,
-    #                                lemmatize=True, lowercase=True,
-    #                                n_process=-1
-    #                                ))
+    fpath = labeling_fpath
+    raw_dir = os.path.join(project_dir, 'data', 'raw')
+    # remove bots from labelers
+    bot_fpath = os.path.join(raw_dir, 'botnames.txt')
+    with open(bot_fpath, encoding='utf8') as f:
+        botnames = set(i.strip() for i in f.read().split('\n'))
+    out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+    to_file(out_fpath, clean_items(item_stream=
+                                   filter(lambda item: re.findall(
+                                       CONSPIRACY_THEORIST_RE,
+                                       item['preprocessed_text'],
+                                       flags=re.I | re.DOTALL | re.U | re.M),
+                                          map(preprocess,
+                                              map(lambda x: x[
+                                                                'author'] not in botnames,
+                                                  stream_normalized_contribution(
+                                                      fpath)))),
+                                   text_field='preprocessed_text',
+                                   cleaned_text_field='processed_text',
+                                   remove_punct=True, remove_digit=True,
+                                   remove_stops=True,
+                                   remove_pron=False,
+                                   lemmatize=True, lowercase=True,
+                                   n_process=-1
+                                   ))
 
     # fpath = sample_fpath
     # out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
@@ -337,7 +344,7 @@ def separate_contributions_by_year():
                                     'labeling_discussions_all_filtered_preprocessed.jsonl')
     os.makedirs(os.path.join(interim_dir, 'text_years'), exist_ok=True)
     for folder_name, input_fpath in [
-        # ("labeling", labeling_fpath),
+        ("labeling", labeling_fpath),
         #                              ("sample", sample_fpath),
         #                              ("ct_sample", ct_sample_fpath),
         #                              ("default_sample", default_sample_fpath),
