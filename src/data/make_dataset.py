@@ -156,6 +156,7 @@ def filter_authors(input_filepath, output_filepath,
     logger.info(f'{input_filepath} to {output_filepath}')
     with open(output_filepath, 'a+', encoding='utf8') as f:
         for contribution in read_zst(input_filepath):
+            if (not contribution) or ('author' not in contribution): continue
             if ('selftext' in contribution) and ('name' not in contribution):
                 contribution['name'] = 't3_' + contribution['id']
 
