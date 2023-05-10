@@ -174,7 +174,7 @@ def args_builder_authors(contribution_fpaths, output_dir, output_suffix,
     return args
 
 
-def collect_authors(input_fpath, bot_fpath, output_dir,
+def collect_authors(input_fpath, bot_fpath, output_dir,author_fpath,
                         output_suffix='_labelers.jsonl'):
     with open(input_fpath, encoding='utf8') as f:
         authors = set(
@@ -184,6 +184,9 @@ def collect_authors(input_fpath, bot_fpath, output_dir,
     with open(bot_fpath, encoding='utf8') as f:
         botnames = set(i.strip() for i in f.read().split('\n'))
     authors = {author for author in authors if author not in botnames}
+    authors = authors.difference({'[deleted]', '[removed]'})
+    with open(author_fpath, 'w+', encoding='utf8') as f:
+        f.write('\n'.join(authors))
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
 
