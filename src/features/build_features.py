@@ -157,7 +157,7 @@ def preprocess_files():
                                        item['preprocessed_text'],
                                        flags=re.I | re.DOTALL | re.U | re.M),
                                           map(preprocess,
-                                              map(lambda x: x[
+                                              filter(lambda x: x[
                                                                 'author'] not in botnames,
                                                   stream_normalized_contribution(
                                                       fpath)))),
