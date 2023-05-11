@@ -184,7 +184,7 @@ def collect_authors(input_fpath, bot_fpath, output_dir,author_fpath,
     with open(bot_fpath, encoding='utf8') as f:
         botnames = set(i.strip() for i in f.read().split('\n'))
     authors = {author for author in authors if author not in botnames}
-    authors = authors.difference({'[deleted]', '[removed]'})
+    authors = authors.difference({'[deleted]', '[removed]', 'autotldr', 'Faction_Chief', 'LoveMangaBuddy'})
     with open(author_fpath, 'w+', encoding='utf8') as f:
         f.write('\n'.join(authors))
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
