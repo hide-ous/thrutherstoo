@@ -437,3 +437,6 @@ rripple_bot
 ChemoBot
 AssistantBOT
 AutoModerator
+autotldr
+Faction_Chief
+LoveMangaBuddy
