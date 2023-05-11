@@ -129,6 +129,7 @@ def filter_discussions(item_stream, discussions,
 def preprocess_files():
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
+    logger = logging.getLogger()
     project_dir = Path(__file__).resolve().parents[2]
 
     interim_dir = os.path.join(project_dir, 'data', 'interim')
@@ -222,11 +223,13 @@ def preprocess_files():
     # read discussions filtered after preprocessing
     discussion_id_fpath = os.path.join(interim_dir, 'discussion_ids.pkl')
     if os.path.exists(discussion_id_fpath):
+        logger.info(f'read existing discussions from {discussion_id_fpath}')
         with open(discussion_id_fpath, 'rb') as f:
             discussions = pickle.load(f)
     else:
         fpath = labeling_fpath
         out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+        logger.info(f'parse discussions from {out_fpath} into {discussion_id_fpath}')
         with open(out_fpath, encoding='utf8') as f:
             discussions = set(
                 i['link_fullname'] for i in
@@ -244,7 +247,7 @@ def preprocess_files():
     #     discussions))
 
     # preprocess only filtered discussions
-    print('preprocess discussions')
+    logger.info('preprocess discussions')
     fpath = discussion_fpath
     out_fpath = os.path.splitext(fpath)[0] + '_filtered.jsonl'
     fpath = out_fpath
