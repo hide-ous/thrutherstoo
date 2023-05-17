@@ -129,6 +129,7 @@ def filter_discussions(item_stream, discussions,
 def preprocess_files():
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
+    logger = logging.getLogger()
     project_dir = Path(__file__).resolve().parents[2]
 
     interim_dir = os.path.join(project_dir, 'data', 'interim')
@@ -144,31 +145,31 @@ def preprocess_files():
     default_sample_fpath = os.path.join(project_dir, 'data', 'interim',
                                         f'sample_contributions_{k}_default.jsonl')
 
-    fpath = labeling_fpath
-    raw_dir = os.path.join(project_dir, 'data', 'raw')
-    # remove bots from labelers
-    bot_fpath = os.path.join(raw_dir, 'botnames.txt')
-    with open(bot_fpath, encoding='utf8') as f:
-        botnames = set(i.strip() for i in f.read().split('\n'))
-    out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
-    to_file(out_fpath, clean_items(item_stream=
-                                   filter(lambda item: re.findall(
-                                       CONSPIRACY_THEORIST_RE,
-                                       item['preprocessed_text'],
-                                       flags=re.I | re.DOTALL | re.U | re.M),
-                                          map(preprocess,
-                                              filter(lambda x: x[
-                                                                'author'] not in botnames,
-                                                  stream_normalized_contribution(
-                                                      fpath)))),
-                                   text_field='preprocessed_text',
-                                   cleaned_text_field='processed_text',
-                                   remove_punct=True, remove_digit=True,
-                                   remove_stops=True,
-                                   remove_pron=False,
-                                   lemmatize=True, lowercase=True,
-                                   n_process=-1
-                                   ))
+    # fpath = labeling_fpath
+    # raw_dir = os.path.join(project_dir, 'data', 'raw')
+    # # remove bots from labelers
+    # bot_fpath = os.path.join(raw_dir, 'botnames.txt')
+    # with open(bot_fpath, encoding='utf8') as f:
+    #     botnames = set(i.strip() for i in f.read().split('\n'))
+    # out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+    # to_file(out_fpath, clean_items(item_stream=
+    #                                filter(lambda item: re.findall(
+    #                                    CONSPIRACY_THEORIST_RE,
+    #                                    item['preprocessed_text'],
+    #                                    flags=re.I | re.DOTALL | re.U | re.M),
+    #                                       map(preprocess,
+    #                                           filter(lambda x: x[
+    #                                                                'author'] not in botnames,
+    #                                                  stream_normalized_contribution(
+    #                                                      fpath)))),
+    #                                text_field='preprocessed_text',
+    #                                cleaned_text_field='processed_text',
+    #                                remove_punct=True, remove_digit=True,
+    #                                remove_stops=True,
+    #                                remove_pron=False,
+    #                                lemmatize=True, lowercase=True,
+    #                                n_process=-1
+    #                                ))
 
     # fpath = sample_fpath
     # out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
@@ -222,11 +223,13 @@ def preprocess_files():
     # read discussions filtered after preprocessing
     discussion_id_fpath = os.path.join(interim_dir, 'discussion_ids.pkl')
     if os.path.exists(discussion_id_fpath):
+        logger.info(f'read existing discussions from {discussion_id_fpath}')
         with open(discussion_id_fpath, 'rb') as f:
             discussions = pickle.load(f)
     else:
         fpath = labeling_fpath
         out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+        logger.info(f'parse discussions from {out_fpath} into {discussion_id_fpath}')
         with open(out_fpath, encoding='utf8') as f:
             discussions = set(
                 i['link_fullname'] for i in
@@ -234,16 +237,19 @@ def preprocess_files():
                 map(json.loads, f))
         with open(discussion_id_fpath, 'wb+') as f:
             pickle.dump(discussions, f)
-    print(f'loaded {len(discussions)} discussion ids')
-    fpath = discussion_fpath
-    out_fpath = os.path.splitext(fpath)[0] + '_filtered.jsonl'
-    # preprocess only filtered discussions
-    to_file(out_fpath, filter_discussions(
-        stream_normalized_contribution(
-            fpath),
-        discussions))
+    # print(f'loaded {len(discussions)} discussion ids')
+    # fpath = discussion_fpath
+    # out_fpath = os.path.splitext(fpath)[0] + '_filtered.jsonl'
+    # # preprocess only filtered discussions
+    # to_file(out_fpath, filter_discussions(
+    #     stream_normalized_contribution(
+    #         fpath),
+    #     discussions))
 
     # preprocess only filtered discussions
+    logger.info('preprocess discussions')
+    fpath = discussion_fpath
+    out_fpath = os.path.splitext(fpath)[0] + '_filtered.jsonl'
     fpath = out_fpath
     out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
     with Pool(40) as pool, open(fpath, encoding='utf8') as f:
@@ -384,7 +390,7 @@ def merge_samples_with_labeling_contributions():
 
     interim_dir = os.path.join(project_dir, 'data', 'interim')
     for dirname in os.listdir(os.path.join(interim_dir, 'text_years')):
-        if dirname == 'labeling':
+        if dirname in {'labeling', 'discussions'}: # don't re-inject labeling contributions in these cases (already present)
             continue
         os.makedirs(
             os.path.join(interim_dir, 'text_years', dirname + '_and_labeling'),

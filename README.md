@@ -7,6 +7,14 @@ steps:
 
 investigating the use of conspiracy theorist as an identity label
 
+Working notes
+-----
+
+Bots added to the bot list after identifying labelers and their contributions:
+autotldr
+Faction_Chief
+LoveMangaBuddy
+
 Project Organization
 ------------
 
