@@ -128,8 +128,6 @@ def plot_annotations(annotations):
 
 def savefig(name):
     directory = '../../reports/figures'
-    if not os.path.exists(directory):
-        os.makedirs(directory)
 
     fname = os.path.join(directory, name)
 
