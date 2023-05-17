@@ -117,7 +117,7 @@ def intersection_align_gensim(m1, m2, words=None):
 def align_years(in_dir, out_dir='../../models/embeddings/'):
     first_iter = True
     base_embed = None
-    for year, year_embed in load_embeddings(in_dir):
+    for year, year_embed in load_embeddings(in_dir).items():
         print("Aligning year:", year)
         if first_iter:
             aligned_embed = year_embed
