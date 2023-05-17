@@ -39,7 +39,7 @@ def fit_tsne(values):
     return fitted
 
 
-def get_time_sims(embed_dict, word1, min_sim=0.3):
+def get_time_sims(embed_dict, word1, min_sim=0.3, n_neighbors=15):
     start = time.time()
     time_sims = OrderedDict()
     lookups = {}
@@ -50,7 +50,7 @@ def get_time_sims(embed_dict, word1, min_sim=0.3):
         nearests["%s|%s" % (word1, year)] = nearest
         time_sims[year] = []
 
-        for (word, sim) in embed.wv.similar_by_word(word1, topn=15):
+        for (word, sim) in embed.wv.similar_by_word(word1, topn=n_neighbors):
             ww = "%s|%s" % (word, year)
             nearest.append((sim, ww))
             if sim > min_sim:
@@ -62,9 +62,11 @@ def get_time_sims(embed_dict, word1, min_sim=0.3):
     return time_sims, lookups, nearests, sims
 
 
-def plot_hist(word1):
-    embeddings = load_embeddings()
-    time_sims, lookups, nearests, sims = get_time_sims(embeddings, word1)
+def plot_historical_neighbors(word1, min_sim=.3, n_neighbors=15, embedding_dir='../../models/embeddings/',
+                              figure_dir='../../reports/figures'):
+    embeddings = load_embeddings(embedding_dir)
+    time_sims, lookups, nearests, sims = get_time_sims(embeddings, word1, min_sim, n_neighbors)
+
 
     words = lookups.keys()
     values = [lookups[word] for word in words]
@@ -80,7 +82,7 @@ def plot_hist(word1):
     if annotations:
         plot_annotations(annotations)
 
-    savefig("%s_annotated" % word1)
+    savefig("%s_annotated" % word1, figure_dir)
     for year, sim in time_sims.iteritems():
         print(year, sim)
 
@@ -126,13 +128,10 @@ def plot_annotations(annotations):
         prev = ann
 
 
-def savefig(name):
-    directory = '../../reports/figures'
-
+def savefig(name, directory = '../../reports/figures'):
     fname = os.path.join(directory, name)
-
     plt.savefig(fname, bbox_inches=0)
 
 
 if __name__ == '__main__':
-    plot_hist('conspiracy_theorist')
+    plot_historical_neighbors('conspiracy_theorist')
