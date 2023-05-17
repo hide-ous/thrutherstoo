@@ -1,9 +1,22 @@
-# taken from https://gist.github.com/zhicongchen/9e23d5c3f1e5b1293b16133485cd17d8
+# adapted from from https://gist.github.com/zhicongchen/9e23d5c3f1e5b1293b16133485cd17d8
+# adn https://github.com/williamleif/histwords/blob/master/vecanalysis/seq_procrustes.py
 import copy
+import os
 
 import gensim
 import numpy as np
 from gensim import downloader
+from gensim.models import Word2Vec
+
+
+def load_embeddings(dirpath='../../models/embeddings/'):
+    to_return = OrderedDict()
+    for year_str in os.listdir(dirpath):
+        year = int(year_str)
+        to_return[year] = Word2Vec.load(
+            os.path.join(dirpath,
+                         f"word2vec_{year}.model"))
+    return to_return
 
 
 def smart_procrustes_align_gensim(base_embed, other_embed, words=None):
@@ -101,11 +114,29 @@ def intersection_align_gensim(m1, m2, words=None):
     return (m1, m2)
 
 
+def align_years(in_dir, out_dir='../../models/embeddings/'):
+    first_iter = True
+    base_embed = None
+    for year, year_embed in load_embeddings(in_dir):
+        print("Aligning year:", year)
+        if first_iter:
+            aligned_embed = year_embed
+            first_iter = False
+        else:
+            aligned_embed = smart_procrustes_align_gensim(base_embed,
+                                                          year_embed)
+        base_embed = aligned_embed
+        print("Writing year:", year)
+        aligned_embed.save(
+            os.path.join(out_dir,
+                         f"word2vec_{year}.model"))
+
+
 if __name__ == '__main__':
 
     import gensim.downloader as api
     from gensim.models.word2vec import Word2Vec
-    from collections import defaultdict
+    from collections import defaultdict, OrderedDict
 
     c1 = api.load('text8')
     c2_ = api.load('20-newsgroups')

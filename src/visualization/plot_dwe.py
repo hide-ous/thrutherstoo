@@ -3,9 +3,10 @@ from collections import OrderedDict
 import time
 
 import numpy as np
-from gensim.models import Word2Vec
 from matplotlib import pyplot as plt
 from sklearn.manifold import TSNE
+
+from src.features.gensim_word2vec_procrustes_align import load_embeddings
 
 CMAP_MIN = 5
 
@@ -14,16 +15,6 @@ CMAP_MIN = 5
 # and https://github.com/williamleif/histwords/blob/master/viz/scripts/closest_over_time_with_anns.py
 def get_cmap(n, name='YlGn'):
     return plt.cm.get_cmap(name, n + CMAP_MIN)
-
-
-def load_embeddings(dirpath='../../models/embeddings/'):
-    to_return = OrderedDict()
-    for year_str in os.listdir(dirpath):
-        year = int(year_str)
-        to_return[year] = Word2Vec.load(
-            os.path.join(dirpath,
-                         f"word2vec_{year}.model"))
-    return to_return
 
 
 def fit_tsne(values):
