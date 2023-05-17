@@ -1,5 +1,9 @@
 # taken from https://gist.github.com/zhicongchen/9e23d5c3f1e5b1293b16133485cd17d8
+import copy
+
+import gensim
 import numpy as np
+from gensim import downloader
 
 
 def smart_procrustes_align_gensim(base_embed, other_embed, words=None):
@@ -36,11 +40,9 @@ def smart_procrustes_align_gensim(base_embed, other_embed, words=None):
     # another matrix operation
     ortho = u.dot(v)
     # Replace original array with modified one, i.e. multiplying the embedding matrix by "ortho"
-    other_embed.wv.vectors = (other_embed.wv.vectors).dot(ortho)
-    return other_embed
 
-    other_embed_copy = copy.deepcopy(other_embed)
-    other_embed_copy.wv.vectors = (other_embed.wv.vectors).dot(ortho)
+    other_embed_copy = copy.deepcopy(in_other_embed)
+    other_embed_copy.wv.vectors = (in_other_embed.wv.vectors).dot(ortho)
     return other_embed_copy
 
 def intersection_align_gensim(m1, m2, words=None):
@@ -73,7 +75,7 @@ def intersection_align_gensim(m1, m2, words=None):
         key=lambda w: m1.wv.get_vecattr(w, "count") + m2.wv.get_vecattr(w,
                                                                         "count"),
         reverse=True)
-    # print(len(common_vocab))
+    print(len(common_vocab))
 
     # Then for each model...
     for m in [m1, m2]:
@@ -96,3 +98,9 @@ def intersection_align_gensim(m1, m2, words=None):
         print(len(m.wv.key_to_index), len(m.wv.vectors))
 
     return (m1, m2)
+
+if __name__ == '__main__':
+    import gensim.downloader as api
+    glove_vectors_25 = api.load('glove-twitter-25')
+    glove_vectors_50 = api.load('glove-twitter-50')
+    downloader
