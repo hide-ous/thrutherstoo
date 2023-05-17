@@ -45,6 +45,7 @@ def smart_procrustes_align_gensim(base_embed, other_embed, words=None):
     other_embed_copy.wv.vectors = (in_other_embed.wv.vectors).dot(ortho)
     return other_embed_copy
 
+
 def intersection_align_gensim(m1, m2, words=None):
     """
     Intersect two gensim word2vec models, m1 and m2.
@@ -99,8 +100,33 @@ def intersection_align_gensim(m1, m2, words=None):
 
     return (m1, m2)
 
+
 if __name__ == '__main__':
+
     import gensim.downloader as api
-    glove_vectors_25 = api.load('glove-twitter-25')
-    glove_vectors_50 = api.load('glove-twitter-50')
-    downloader
+    from gensim.models.word2vec import Word2Vec
+    from collections import defaultdict
+
+    c1 = api.load('text8')
+    c2_ = api.load('20-newsgroups')
+
+    stoplist = set('for a of the and to in'.split())
+    texts = [
+        [word for word in document.lower().split() if word not in stoplist]
+        for document in c2_
+    ]
+
+    # remove words that appear only once
+    frequency = defaultdict(int)
+    for text in texts:
+        for token in text:
+            frequency[token] += 1
+
+    c2 = [
+        [token for token in text if frequency[token] > 1]
+        for text in texts
+    ]
+
+    m1 = Word2Vec(c1)
+    m2 = Word2Vec(c2)
+    smart_procrustes_align_gensim(m1, m2)
