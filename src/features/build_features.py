@@ -407,11 +407,11 @@ def merge_samples_with_labeling_contributions():
                 labeling_contribs = list(f)
                 if dirname.startswith('ct'):
                     labeling_contribs = list(filter(
-                        lambda x: x['subreddit'] in CONSPIRACY_SUBREDDITS,
+                        lambda x: json.loads(x)['subreddit'] in CONSPIRACY_SUBREDDITS,
                         labeling_contribs))
                 elif dirname.startswith('default'):
                     labeling_contribs = list(filter(
-                        lambda x: x['subreddit'] in DEFAULT_SUBREDDITS,
+                        lambda x: json.loads(x)['subreddit'] in DEFAULT_SUBREDDITS,
                         labeling_contribs))
             with open(regular_fpath, encoding='utf8') as f:
                 regular_contribs = list(f)
