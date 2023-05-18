@@ -404,7 +404,7 @@ def merge_samples_with_labeling_contributions():
                                      dirname + '_and_labeling', fname)
             logger.info(f"merging labeling contribusions for {dirname}/{fname}")
             with open(labeling_fpath, encoding='utf8') as f:
-                labeling_contribs = list(filter(lambda x: x and len(x), f))
+                labeling_contribs = list(filter(lambda x: (x is not None) and len(x.strip()), f))
                 if dirname.startswith('ct'):
                     labeling_contribs = list(filter(
                         lambda x: json.loads(x)['subreddit'] in CONSPIRACY_SUBREDDITS,
