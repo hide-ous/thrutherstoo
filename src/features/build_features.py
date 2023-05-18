@@ -406,13 +406,13 @@ def merge_samples_with_labeling_contributions():
             with open(labeling_fpath, encoding='utf8') as f:
                 labeling_contribs = list(f)
                 if dirname.startswith('ct'):
-                    labeling_contribs = filter(
+                    labeling_contribs = list(filter(
                         lambda x: x['subreddit'] in CONSPIRACY_SUBREDDITS,
-                        labeling_contribs)
+                        labeling_contribs))
                 elif dirname.startswith('default'):
-                    labeling_contribs = filter(
+                    labeling_contribs = list(filter(
                         lambda x: x['subreddit'] in DEFAULT_SUBREDDITS,
-                        labeling_contribs)
+                        labeling_contribs))
             with open(regular_fpath, encoding='utf8') as f:
                 regular_contribs = list(f)
             contribs = regular_contribs + labeling_contribs
