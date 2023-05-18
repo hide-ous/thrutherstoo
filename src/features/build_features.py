@@ -392,7 +392,7 @@ def separate_contributions_by_year():
             logger.info(
                 f"preparing {os.path.join(interim_dir, 'text_years', folder_name)}")
             for item in map(json.loads, f):
-                if item['subreddit'] not in subreddits: continue
+                if ('subreddit' in item) and (item['subreddit'] not in subreddits): continue
                 item_date = datetime.datetime.fromtimestamp(
                     float(item['created_utc']))
                 item_year = item_date.year
