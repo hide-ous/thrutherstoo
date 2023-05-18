@@ -310,12 +310,6 @@ if __name__ == '__main__':
     interim_dir = os.path.join(project_dir, 'data', 'interim')
     raw_dir = os.path.join(project_dir, 'data', 'raw')
 
-    # # find .env automagically by walking up directories until it's found, then
-    # # load up the .env entries as environment variables
-    # load_dotenv(find_dotenv())
-    # infile = os.path.join(project_dir, 'data', 'external', 'RC_2009-09.zst')
-    # outfile = os.path.join(project_dir, 'data', 'interim', 'RC_2009-09.jsonl')
-    # main(input_filepath=infile, output_filepath=outfile)
 
     # parse_files(os.path.join(project_dir, 'data', 'interim'))
     # labeling_fpath = os.path.join(project_dir, 'data', 'interim',
@@ -373,7 +367,4 @@ if __name__ == '__main__':
     consolidate_files(interim_dir,
                       labeler_fpath,
                       file_suffix=labeler_suffix)
-    # outfile = os.path.join(project_dir, 'data', 'interim',
-    #                        'labeling_contributions.jsonl')
-    # search_pushshift(store_path=outfile,
-    #                  q='''conspiracist|conspiracists|"conspiracy theorist"|"conspiracy theorists"''')
+
