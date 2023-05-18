@@ -404,7 +404,7 @@ def merge_samples_with_labeling_contributions():
                                      dirname + '_and_labeling', fname)
             logger.info(f"merging labeling contribusions for {dirname}/{fname}")
             with open(labeling_fpath, encoding='utf8') as f:
-                labeling_contribs = list(f)
+                labeling_contribs = list(filter(lambda x: x and len(x), f))
                 if dirname.startswith('ct'):
                     labeling_contribs = list(filter(
                         lambda x: json.loads(x)['subreddit'] in CONSPIRACY_SUBREDDITS,
@@ -425,6 +425,6 @@ if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
     # preprocess_files()
-    separate_contributions_by_year()
+    # separate_contributions_by_year()
     merge_samples_with_labeling_contributions()
     build_embeddings()
