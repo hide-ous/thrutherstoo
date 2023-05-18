@@ -419,7 +419,7 @@ def merge_samples_with_labeling_contributions():
 
     interim_dir = os.path.join(project_dir, 'data', 'interim')
     for dirname in os.listdir(os.path.join(interim_dir, 'text_years')):
-        if dirname in {'labeling', 'discussions', 'labeling_ct', 'labeling_default'}: # don't re-inject labeling contributions in these cases (already present)
+        if ('labeling' in dirname) or ('discussions' in dirname): # don't re-inject labeling contributions in these cases (already present)
             continue
         os.makedirs(
             os.path.join(interim_dir, 'text_years', dirname + '_and_labeling'),
