@@ -348,13 +348,43 @@ def separate_contributions_by_year():
     discussion_fpath = os.path.join(interim_dir,
                                     'labeling_discussions_all_filtered_preprocessed.jsonl')
     os.makedirs(os.path.join(interim_dir, 'text_years'), exist_ok=True)
-    for folder_name, input_fpath in [
-        ("labeling", labeling_fpath),
-        #                              ("sample", sample_fpath),
-        #                              ("ct_sample", ct_sample_fpath),
-        #                              ("default_sample", default_sample_fpath),
-        # ("discussions", discussion_fpath)
-    ]:
+    # for folder_name, input_fpath in [
+    #     ("labeling", labeling_fpath),
+    #     #                              ("sample", sample_fpath),
+    #     #                              ("ct_sample", ct_sample_fpath),
+    #     #                              ("default_sample", default_sample_fpath),
+    #     ("discussions", discussion_fpath)
+    # ]:
+    #     out_fhandles = dict()
+    #     with open(input_fpath, encoding='utf8') as f:
+    #         os.makedirs(os.path.join(interim_dir, 'text_years', folder_name),
+    #                     exist_ok=True)
+    #         logger.info(
+    #             f"preparing {os.path.join(interim_dir, 'text_years', folder_name)}")
+    #         for item in map(json.loads, f):
+    #             item_date = datetime.datetime.fromtimestamp(
+    #                 float(item['created_utc']))
+    #             item_year = item_date.year
+    #             item_text = item['processed_text']
+    #             item_text = re.sub(r'conspiracy.theorists?',
+    #                                'conspiracy_theorist', item_text,
+    #                                flags=re.I | re.U | re.DOTALL | re.M)
+    #             if item_year not in out_fhandles:
+    #                 year_path = os.path.join(interim_dir, 'text_years',
+    #                                          folder_name,
+    #                                          f'{item_year}.csv')
+    #                 out_fhandles[item_year] = open(year_path
+    #                                                , "w+", encoding='utf8')
+    #                 logger.info(f"opening {year_path}")
+    #             ff = out_fhandles[item_year]
+    #             ff.write(item_text + '\n')
+    #     for ff in out_fhandles.values():
+    #         ff.close()
+
+
+    for subsample, subreddits in [('ct', CONSPIRACY_SUBREDDITS),
+                                   ('default', DEFAULT_SUBREDDITS)]:
+        folder_name, input_fpath = (f"labeling_{subsample}", labeling_fpath)
         out_fhandles = dict()
         with open(input_fpath, encoding='utf8') as f:
             os.makedirs(os.path.join(interim_dir, 'text_years', folder_name),
@@ -362,6 +392,7 @@ def separate_contributions_by_year():
             logger.info(
                 f"preparing {os.path.join(interim_dir, 'text_years', folder_name)}")
             for item in map(json.loads, f):
+                if item['subreddit'] not in subreddits: continue
                 item_date = datetime.datetime.fromtimestamp(
                     float(item['created_utc']))
                 item_year = item_date.year
@@ -381,7 +412,6 @@ def separate_contributions_by_year():
         for ff in out_fhandles.values():
             ff.close()
 
-
 def merge_samples_with_labeling_contributions():
     logger = logging.getLogger()
     # prepare input for the embeddings
@@ -389,14 +419,14 @@ def merge_samples_with_labeling_contributions():
 
     interim_dir = os.path.join(project_dir, 'data', 'interim')
     for dirname in os.listdir(os.path.join(interim_dir, 'text_years')):
-        if dirname in {'labeling', 'discussions'}: # don't re-inject labeling contributions in these cases (already present)
+        if dirname in {'labeling', 'discussions', 'labeling_ct', 'labeling_default'}: # don't re-inject labeling contributions in these cases (already present)
             continue
         os.makedirs(
             os.path.join(interim_dir, 'text_years', dirname + '_and_labeling'),
             exist_ok=True)
         for fname in os.listdir(
                 os.path.join(interim_dir, 'text_years', dirname)):
-            labeling_fpath = os.path.join(interim_dir, 'text_years', 'labeling',
+            labeling_fpath = os.path.join(interim_dir, 'text_years', 'labeling_ct' if dirname.startswith('ct') else 'labeling_default',
                                           fname)
             regular_fpath = os.path.join(interim_dir, 'text_years', dirname,
                                          fname)
@@ -404,15 +434,15 @@ def merge_samples_with_labeling_contributions():
                                      dirname + '_and_labeling', fname)
             logger.info(f"merging labeling contribusions for {dirname}/{fname}")
             with open(labeling_fpath, encoding='utf8') as f:
-                labeling_contribs = list(filter(lambda x: (x is not None) and len(x.strip()), f))
-                if dirname.startswith('ct'):
-                    labeling_contribs = list(filter(
-                        lambda x: json.loads(x)['subreddit'] in CONSPIRACY_SUBREDDITS,
-                        labeling_contribs))
-                elif dirname.startswith('default'):
-                    labeling_contribs = list(filter(
-                        lambda x: json.loads(x)['subreddit'] in DEFAULT_SUBREDDITS,
-                        labeling_contribs))
+                labeling_contribs = list(f)
+                # if dirname.startswith('ct'):
+                #     labeling_contribs = list(filter(
+                #         lambda x: json.loads(x)['subreddit'] in CONSPIRACY_SUBREDDITS,
+                #         labeling_contribs))
+                # elif dirname.startswith('default'):
+                #     labeling_contribs = list(filter(
+                #         lambda x: json.loads(x)['subreddit'] in DEFAULT_SUBREDDITS,
+                #         labeling_contribs))
             with open(regular_fpath, encoding='utf8') as f:
                 regular_contribs = list(f)
             contribs = regular_contribs + labeling_contribs
@@ -425,6 +455,6 @@ if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
     # preprocess_files()
-    # separate_contributions_by_year()
+    separate_contributions_by_year()
     merge_samples_with_labeling_contributions()
     build_embeddings()
