@@ -353,7 +353,7 @@ def separate_contributions_by_year():
         #                              ("sample", sample_fpath),
         #                              ("ct_sample", ct_sample_fpath),
         #                              ("default_sample", default_sample_fpath),
-        ("discussions", discussion_fpath)
+        # ("discussions", discussion_fpath)
     ]:
         out_fhandles = dict()
         with open(input_fpath, encoding='utf8') as f:
@@ -424,7 +424,7 @@ def merge_samples_with_labeling_contributions():
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
-    preprocess_files()
+    # preprocess_files()
     separate_contributions_by_year()
     merge_samples_with_labeling_contributions()
     build_embeddings()
