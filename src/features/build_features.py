@@ -220,23 +220,23 @@ def preprocess_files():
     #                                    n_process=-1
     #                                    ))
 
-    # read discussions filtered after preprocessing
-    discussion_id_fpath = os.path.join(interim_dir, 'discussion_ids.pkl')
-    if os.path.exists(discussion_id_fpath):
-        logger.info(f'read existing discussions from {discussion_id_fpath}')
-        with open(discussion_id_fpath, 'rb') as f:
-            discussions = pickle.load(f)
-    else:
-        fpath = labeling_fpath
-        out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
-        logger.info(f'parse discussions from {out_fpath} into {discussion_id_fpath}')
-        with open(out_fpath, encoding='utf8') as f:
-            discussions = set(
-                i['link_fullname'] for i in
-                # i['name'] if ('selftext' in i) else i['link_id'] for i in
-                map(json.loads, f))
-        with open(discussion_id_fpath, 'wb+') as f:
-            pickle.dump(discussions, f)
+    # # read discussions filtered after preprocessing
+    # discussion_id_fpath = os.path.join(interim_dir, 'discussion_ids.pkl')
+    # if os.path.exists(discussion_id_fpath):
+    #     logger.info(f'read existing discussions from {discussion_id_fpath}')
+    #     with open(discussion_id_fpath, 'rb') as f:
+    #         discussions = pickle.load(f)
+    # else:
+    #     fpath = labeling_fpath
+    #     out_fpath = os.path.splitext(fpath)[0] + '_preprocessed.jsonl'
+    #     logger.info(f'parse discussions from {out_fpath} into {discussion_id_fpath}')
+    #     with open(out_fpath, encoding='utf8') as f:
+    #         discussions = set(
+    #             i['link_fullname'] for i in
+    #             # i['name'] if ('selftext' in i) else i['link_id'] for i in
+    #             map(json.loads, f))
+    #     with open(discussion_id_fpath, 'wb+') as f:
+    #         pickle.dump(discussions, f)
     # print(f'loaded {len(discussions)} discussion ids')
     # fpath = discussion_fpath
     # out_fpath = os.path.splitext(fpath)[0] + '_filtered.jsonl'
@@ -255,8 +255,7 @@ def preprocess_files():
     with Pool(40) as pool, open(fpath, encoding='utf8') as f:
         to_file(out_fpath, clean_items(item_stream=
                                        pool.imap_unordered(preprocess,
-                                                           map(json.loads, f),
-                                                           discussions),
+                                                           map(json.loads, f)),
                                        text_field='preprocessed_text',
                                        cleaned_text_field='processed_text',
                                        remove_punct=True, remove_digit=True,
