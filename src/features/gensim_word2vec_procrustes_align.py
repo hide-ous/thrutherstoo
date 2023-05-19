@@ -7,12 +7,14 @@ import gensim
 import numpy as np
 from gensim import downloader
 from gensim.models import Word2Vec
+from collections import OrderedDict
 
 
 def load_embeddings(dirpath='../../models/embeddings/'):
     to_return = OrderedDict()
     for year_str in os.listdir(dirpath):
-        year = int(year_str)
+        if not year_str.endswith('.model'): continue
+        year = int(year_str[-10:-6])
         to_return[year] = Word2Vec.load(
             os.path.join(dirpath,
                          f"word2vec_{year}.model"))
@@ -43,6 +45,8 @@ def smart_procrustes_align_gensim(base_embed, other_embed, words=None):
                                                               words=words)
 
     # get the (normalized) embedding matrices
+    in_base_embed.wv.fill_norms(force=True)
+    in_other_embed.wv.fill_norms(force=True)
     base_vecs = in_base_embed.wv.get_normed_vectors()
     other_vecs = in_other_embed.wv.get_normed_vectors()
 
@@ -127,6 +131,7 @@ def align_years(in_dir, out_dir='../../models/embeddings/'):
                                                           year_embed)
         base_embed = aligned_embed
         print("Writing year:", year)
+        os.makedirs(out_dir, exist_ok=True)
         aligned_embed.save(
             os.path.join(out_dir,
                          f"word2vec_{year}.model"))
