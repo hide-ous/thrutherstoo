@@ -15,6 +15,7 @@ from gensim.test.utils import datapath
 
 from src.data.make_dataset import CONSPIRACY_THEORIST_RE, CONSPIRACY_SUBREDDITS, \
     DEFAULT_SUBREDDITS
+from src.features.gensim_word2vec_procrustes_align import align_years
 from src.features.preprocess_text import clean_items, preprocess_pre_tokenizing
 from src.utils import to_file
 
@@ -444,10 +445,21 @@ def merge_samples_with_labeling_contributions():
                 f.write('\n'.join(contribs))
 
 
+def align_embeddings():
+    logger = logging.getLogger()
+    project_dir = Path(__file__).resolve().parents[2]
+
+    interim_dir = os.path.join(project_dir, 'data', 'interim')
+    embedding_dir = os.path.join(interim_dir, 'embeddings')
+    aligned_embedding_dir = os.path.join(interim_dir, 'aligned_embeddings')
+    for dirname in os.listdir(embedding_dir):
+        align_years(in_dir=os.path.join(embedding_dir, dirname), out_dir=os.path.join(aligned_embedding_dir, dirname))
+
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
     # preprocess_files()
     # separate_contributions_by_year()
     # merge_samples_with_labeling_contributions()
-    build_embeddings()
+    # build_embeddings()
+    align_embeddings()

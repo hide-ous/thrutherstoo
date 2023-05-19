@@ -12,7 +12,7 @@ from gensim.models import Word2Vec
 def load_embeddings(dirpath='../../models/embeddings/'):
     to_return = OrderedDict()
     for year_str in os.listdir(dirpath):
-        year = int(year_str)
+        year = int(year_str[-10:-6])
         to_return[year] = Word2Vec.load(
             os.path.join(dirpath,
                          f"word2vec_{year}.model"))
