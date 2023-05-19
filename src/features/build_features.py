@@ -382,9 +382,8 @@ def separate_contributions_by_year():
     #     for ff in out_fhandles.values():
     #         ff.close()
 
-
     for subsample, subreddits in [('ct', CONSPIRACY_SUBREDDITS),
-                                   ('default', DEFAULT_SUBREDDITS)]:
+                                  ('default', DEFAULT_SUBREDDITS)]:
         folder_name, input_fpath = (f"labeling_{subsample}", labeling_fpath)
         out_fhandles = dict()
         with open(input_fpath, encoding='utf8') as f:
@@ -413,6 +412,7 @@ def separate_contributions_by_year():
         for ff in out_fhandles.values():
             ff.close()
 
+
 def merge_samples_with_labeling_contributions():
     logger = logging.getLogger()
     # prepare input for the embeddings
@@ -420,14 +420,16 @@ def merge_samples_with_labeling_contributions():
 
     interim_dir = os.path.join(project_dir, 'data', 'interim')
     for dirname in os.listdir(os.path.join(interim_dir, 'text_years')):
-        if ('labeling' in dirname) or ('discussions' in dirname): # don't re-inject labeling contributions in these cases (already present)
+        if ('labeling' in dirname) or (
+                'discussions' in dirname):  # don't re-inject labeling contributions in these cases (already present)
             continue
         os.makedirs(
             os.path.join(interim_dir, 'text_years', dirname + '_and_labeling'),
             exist_ok=True)
         for fname in os.listdir(
                 os.path.join(interim_dir, 'text_years', dirname)):
-            labeling_fpath = os.path.join(interim_dir, 'text_years', 'labeling_ct' if dirname.startswith('ct') else 'labeling_default',
+            labeling_fpath = os.path.join(interim_dir, 'text_years',
+                                          'labeling_ct' if dirname.startswith('ct') else 'labeling_default',
                                           fname)
             regular_fpath = os.path.join(interim_dir, 'text_years', dirname,
                                          fname)
@@ -454,6 +456,7 @@ def align_embeddings():
     aligned_embedding_dir = os.path.join(interim_dir, 'aligned_embeddings')
     for dirname in os.listdir(embedding_dir):
         align_years(in_dir=os.path.join(embedding_dir, dirname), out_dir=os.path.join(aligned_embedding_dir, dirname))
+
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'

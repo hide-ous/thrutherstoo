@@ -7,11 +7,13 @@ import gensim
 import numpy as np
 from gensim import downloader
 from gensim.models import Word2Vec
+from collections import OrderedDict
 
 
 def load_embeddings(dirpath='../../models/embeddings/'):
     to_return = OrderedDict()
     for year_str in os.listdir(dirpath):
+        if not year_str.endswith('.model'): continue
         year = int(year_str[-10:-6])
         to_return[year] = Word2Vec.load(
             os.path.join(dirpath,
