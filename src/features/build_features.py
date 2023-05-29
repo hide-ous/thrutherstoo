@@ -338,7 +338,7 @@ def separate_contributions_by_year():
     interim_dir = os.path.join(project_dir, 'data', 'interim')
 
     labeling_fpath = os.path.join(interim_dir,
-                                  'labeling_contributions_preprocessed.jsonl')
+                                  'labeling_contributions_preprocessed_no_bot.jsonl')
     k = 100000
     sample_fpath = os.path.join(interim_dir,
                                 f'sample_contributions_{k}_preprocessed.jsonl')
@@ -347,7 +347,7 @@ def separate_contributions_by_year():
     default_sample_fpath = os.path.join(project_dir, 'data', 'interim',
                                         f'sample_contributions_{k}_default_preprocessed.jsonl')
     discussion_fpath = os.path.join(interim_dir,
-                                    'labeling_discussions_all_filtered_preprocessed.jsonl')
+                                    'labeling_discussions_all_filtered_preprocessed_no_bot.jsonl')
     os.makedirs(os.path.join(interim_dir, 'text_years'), exist_ok=True)
     for folder_name, input_fpath in [
         ("labeling", labeling_fpath),
@@ -462,7 +462,9 @@ if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
     # preprocess_files()
-    # separate_contributions_by_year()
-    # merge_samples_with_labeling_contributions()
-    # build_embeddings()
+    # should run the notebook to find bots
+    # then, should run the filter_bots function in make_dataset
+    separate_contributions_by_year()
+    merge_samples_with_labeling_contributions()
+    build_embeddings()
     align_embeddings()
