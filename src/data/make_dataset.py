@@ -300,6 +300,39 @@ def sample_contributions(k, output_dir,
     with Pool(40) as pool:
         pool.map(sample_instances_, args)
 
+def filter_bots():
+    project_dir = Path(__file__).resolve().parents[2]
+    interim_dir = os.path.join(project_dir, 'data', 'interim')
+    raw_dir = os.path.join(project_dir, 'data', 'raw')
+
+    # remove remaining bot authors
+    with open(os.path.join(raw_dir, 'botnames_expanded.txt'), encoding='utf8') as f:
+        botnames = set(i.strip() for i in f)
+
+    # filter labeling contributions
+    no_bot_suffix='_no_bot.'
+    # find discussions from labeling contributions while at it
+    labeling_discussions = set()
+    labeling_fpath = os.path.join(interim_dir,
+                                  'labeling_contributions_preprocessed.jsonl')
+    with open(labeling_fpath, encoding='utf8') as f,\
+            open(labeling_fpath.replace('.', no_bot_suffix), 'w+', encoding='utf8') as fout:
+        for line in f:
+            contribution = json.loads(line)
+            if contribution.get('author', '') not in botnames:
+                fout.write(line)
+                labeling_discussions.add(contribution['link_fullname'])
+
+    # filter labeling discussions
+    discussion_fpath = os.path.join(interim_dir,
+                                    'labeling_discussions_all_filtered_preprocessed.jsonl')
+    with open(discussion_fpath, encoding='utf8') as f,\
+            open(discussion_fpath.replace('.', no_bot_suffix), 'w+', encoding='utf8') as fout:
+        for line in f:
+            contribution = json.loads(line)
+            if contribution['link_fullname'] in labeling_discussions:
+                fout.write(line)
+
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -345,6 +378,8 @@ if __name__ == '__main__':
     # consolidate_files(interim_dir,
     #                   sample_fpath,
     #                   file_suffix=sample_suffix)
+
+    filter_bots()
     #
     # sample_suffix = '_sample_default.jsonl'
     # k = 100000
