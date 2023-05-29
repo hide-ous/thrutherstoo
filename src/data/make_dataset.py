@@ -301,11 +301,15 @@ def sample_contributions(k, output_dir,
         pool.map(sample_instances_, args)
 
 def filter_bots():
+    logger = logging.getLogger(__name__)
+    logger.info('filtering bots')
+
     project_dir = Path(__file__).resolve().parents[2]
     interim_dir = os.path.join(project_dir, 'data', 'interim')
     raw_dir = os.path.join(project_dir, 'data', 'raw')
 
     # remove remaining bot authors
+    logger.info('reading bots')
     with open(os.path.join(raw_dir, 'botnames_expanded.txt'), encoding='utf8') as f:
         botnames = set(i.strip() for i in f)
 
@@ -315,6 +319,7 @@ def filter_bots():
     labeling_discussions = set()
     labeling_fpath = os.path.join(interim_dir,
                                   'labeling_contributions_preprocessed.jsonl')
+    logger.info('filtering labeling contributions')
     with open(labeling_fpath, encoding='utf8') as f,\
             open(labeling_fpath.replace('.', no_bot_suffix), 'w+', encoding='utf8') as fout:
         for line in f:
@@ -324,6 +329,7 @@ def filter_bots():
                 labeling_discussions.add(contribution['link_fullname'])
 
     # filter labeling discussions
+    logger.info('filtering discussions')
     discussion_fpath = os.path.join(interim_dir,
                                     'labeling_discussions_all_filtered_preprocessed.jsonl')
     with open(discussion_fpath, encoding='utf8') as f,\
@@ -379,7 +385,6 @@ if __name__ == '__main__':
     #                   sample_fpath,
     #                   file_suffix=sample_suffix)
 
-    filter_bots()
     #
     # sample_suffix = '_sample_default.jsonl'
     # k = 100000
@@ -390,11 +395,13 @@ if __name__ == '__main__':
     #                   sample_fpath,
     #                   file_suffix=sample_suffix)
 
+    filter_bots()
 
     labeler_suffix = '_labelers.jsonl'
-    filtered_authors_fpath = os.path.join(interim_dir, 'labeling_contributions_preprocessed.jsonl')
+
+    filtered_authors_fpath = os.path.join(interim_dir, 'labeling_contributions_preprocessed_no_bot.jsonl')
     collect_authors(input_fpath=filtered_authors_fpath,
-                    bot_fpath=os.path.join(raw_dir, 'botnames.txt'),
+                    bot_fpath=os.path.join(raw_dir, 'botnames_expanded.txt'),
                     output_dir=interim_dir,
                     output_suffix=labeler_suffix)
     labeler_fpath = os.path.join(project_dir, 'data', 'interim',
