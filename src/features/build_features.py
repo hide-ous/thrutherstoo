@@ -447,7 +447,7 @@ def merge_samples_with_labeling_contributions():
                 f.write('\n'.join(contribs))
 
 
-def align_embeddings():
+def align_embeddings(max_year=2022, min_year=2012):
     logger = logging.getLogger()
     project_dir = Path(__file__).resolve().parents[2]
 
@@ -455,7 +455,8 @@ def align_embeddings():
     embedding_dir = os.path.join(interim_dir, 'embeddings')
     aligned_embedding_dir = os.path.join(interim_dir, 'aligned_embeddings')
     for dirname in os.listdir(embedding_dir):
-        align_years(in_dir=os.path.join(embedding_dir, dirname), out_dir=os.path.join(aligned_embedding_dir, dirname))
+        align_years(in_dir=os.path.join(embedding_dir, dirname), out_dir=os.path.join(aligned_embedding_dir, dirname),
+                    max_year=max_year, min_year=min_year)
 
 
 if __name__ == '__main__':

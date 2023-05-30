@@ -118,11 +118,14 @@ def intersection_align_gensim(m1, m2, words=None):
     return (m1, m2)
 
 
-def align_years(in_dir, out_dir='../../models/embeddings/'):
+def align_years(in_dir, out_dir='../../models/embeddings/', max_year=2022, min_year=2012):
     first_iter = True
     base_embed = None
-    for year, year_embed in load_embeddings(in_dir).items():
+    years_and_embeddings = load_embeddings(in_dir)
+    for year, year_embed in ((k, years_and_embeddings[k]) for k in reversed(years_and_embeddings)):
         print("Aligning year:", year)
+        if year > max_year: continue
+        elif year < min_year: break
         if first_iter:
             aligned_embed = year_embed
             first_iter = False
