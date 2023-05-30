@@ -394,8 +394,8 @@ if __name__ == '__main__':
     # consolidate_files(interim_dir,
     #                   sample_fpath,
     #                   file_suffix=sample_suffix)
-
-    filter_bots()
+    #
+    # filter_bots()
 
     labeler_suffix = '_labelers.jsonl'
 
