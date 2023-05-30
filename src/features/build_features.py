@@ -338,7 +338,7 @@ def separate_contributions_by_year():
     interim_dir = os.path.join(project_dir, 'data', 'interim')
 
     labeling_fpath = os.path.join(interim_dir,
-                                  'labeling_contributions_preprocessed.jsonl')
+                                  'labeling_contributions_preprocessed_no_bot.jsonl')
     k = 100000
     sample_fpath = os.path.join(interim_dir,
                                 f'sample_contributions_{k}_preprocessed.jsonl')
@@ -347,40 +347,40 @@ def separate_contributions_by_year():
     default_sample_fpath = os.path.join(project_dir, 'data', 'interim',
                                         f'sample_contributions_{k}_default_preprocessed.jsonl')
     discussion_fpath = os.path.join(interim_dir,
-                                    'labeling_discussions_all_filtered_preprocessed.jsonl')
+                                    'labeling_discussions_all_filtered_preprocessed_no_bot.jsonl')
     os.makedirs(os.path.join(interim_dir, 'text_years'), exist_ok=True)
-    # for folder_name, input_fpath in [
-    #     ("labeling", labeling_fpath),
-    #     #                              ("sample", sample_fpath),
-    #     #                              ("ct_sample", ct_sample_fpath),
-    #     #                              ("default_sample", default_sample_fpath),
-    #     ("discussions", discussion_fpath)
-    # ]:
-    #     out_fhandles = dict()
-    #     with open(input_fpath, encoding='utf8') as f:
-    #         os.makedirs(os.path.join(interim_dir, 'text_years', folder_name),
-    #                     exist_ok=True)
-    #         logger.info(
-    #             f"preparing {os.path.join(interim_dir, 'text_years', folder_name)}")
-    #         for item in map(json.loads, f):
-    #             item_date = datetime.datetime.fromtimestamp(
-    #                 float(item['created_utc']))
-    #             item_year = item_date.year
-    #             item_text = item['processed_text']
-    #             item_text = re.sub(r'conspiracy.theorists?',
-    #                                'conspiracy_theorist', item_text,
-    #                                flags=re.I | re.U | re.DOTALL | re.M)
-    #             if item_year not in out_fhandles:
-    #                 year_path = os.path.join(interim_dir, 'text_years',
-    #                                          folder_name,
-    #                                          f'{item_year}.csv')
-    #                 out_fhandles[item_year] = open(year_path
-    #                                                , "w+", encoding='utf8')
-    #                 logger.info(f"opening {year_path}")
-    #             ff = out_fhandles[item_year]
-    #             ff.write(item_text + '\n')
-    #     for ff in out_fhandles.values():
-    #         ff.close()
+    for folder_name, input_fpath in [
+        ("labeling", labeling_fpath),
+        #                              ("sample", sample_fpath),
+        #                              ("ct_sample", ct_sample_fpath),
+        #                              ("default_sample", default_sample_fpath),
+        ("discussions", discussion_fpath)
+    ]:
+        out_fhandles = dict()
+        with open(input_fpath, encoding='utf8') as f:
+            os.makedirs(os.path.join(interim_dir, 'text_years', folder_name),
+                        exist_ok=True)
+            logger.info(
+                f"preparing {os.path.join(interim_dir, 'text_years', folder_name)}")
+            for item in map(json.loads, f):
+                item_date = datetime.datetime.fromtimestamp(
+                    float(item['created_utc']))
+                item_year = item_date.year
+                item_text = item['processed_text']
+                item_text = re.sub(r'conspiracy.theorists?',
+                                   'conspiracy_theorist', item_text,
+                                   flags=re.I | re.U | re.DOTALL | re.M)
+                if item_year not in out_fhandles:
+                    year_path = os.path.join(interim_dir, 'text_years',
+                                             folder_name,
+                                             f'{item_year}.csv')
+                    out_fhandles[item_year] = open(year_path
+                                                   , "w+", encoding='utf8')
+                    logger.info(f"opening {year_path}")
+                ff = out_fhandles[item_year]
+                ff.write(item_text + '\n')
+        for ff in out_fhandles.values():
+            ff.close()
 
     for subsample, subreddits in [('ct', CONSPIRACY_SUBREDDITS),
                                   ('default', DEFAULT_SUBREDDITS)]:
@@ -463,7 +463,9 @@ if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
     # preprocess_files()
-    # separate_contributions_by_year()
-    # merge_samples_with_labeling_contributions()
-    # build_embeddings()
+    # should run the notebook to find bots
+    # then, should run the filter_bots function in make_dataset
+    separate_contributions_by_year()
+    merge_samples_with_labeling_contributions()
+    build_embeddings()
     align_embeddings()
