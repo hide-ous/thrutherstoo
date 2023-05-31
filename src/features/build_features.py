@@ -504,18 +504,14 @@ def enhance_with_perspective(max_retries=3,
 
     for input_fpath in [
         labeling_fpath,
-        sample_fpath,
-        ct_sample_fpath,
-        default_sample_fpath,
-        discussion_fpath,
+        # sample_fpath,
+        # ct_sample_fpath,
+        # default_sample_fpath,
+        # discussion_fpath,
     ]:
-        output_fpath = os.path.join(out_dir,
-                                    os.path.split(input_fpath)[:-1].replace(
-                                        '.jsonl', '_perspective.jsonl'))
-        with open(input_fpath, encoding='utf8') as f, open(output_fpath, 'w+',
-                                                           encoding='utf8') as outf:
-            perspectives = dict()
-            for contribution in map(json.loads, f):
+        output_fpath = os.path.join(out_dir, os.path.split(input_fpath)[-1].replace('.jsonl', '_perspective.jsonl'))
+        with open(input_fpath, encoding='utf8') as f, open(output_fpath, 'w+', encoding='utf8') as outf:
+            for contribution in tqdm(map(json.loads, f), desc=f'processing {os.path.split(input_fpath)[-1]}'):
                 fullname, text = contribution['fullname'], contribution['text']
                 retries = 0
                 done = False
@@ -535,9 +531,7 @@ def enhance_with_perspective(max_retries=3,
                             logger.warning(e)
                             retries += 1
                             time.sleep(60)
-                perspectives[fullname] = score
-            for k, v in perspectives.items():
-                outf.write(json.dumps({k: v}) + '\n')
+                outf.write(json.dumps({fullname: score}, sort_keys=True) + '\n')
 
 
 def enhance_with_liwc(n_threads=4):
