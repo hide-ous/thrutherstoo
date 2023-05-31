@@ -14,7 +14,8 @@ REQUESTED_ATTRIBUTES_ALL = {"TOXICITY": {}, "SEVERE_TOXICITY": {}, "IDENTITY_ATT
 REQUESTED_ATTRIBUTES_TOXICITY = {"TOXICITY": {}}
 
 ONE_SECOND = 1
-ONE_MINUTE = 60*ONE_SECOND
+ONE_MINUTE = 60 * ONE_SECOND
+
 
 @sleep_and_retry
 @limits(calls=3000, period=ONE_MINUTE)
@@ -28,7 +29,7 @@ def get_toxicity_score(comment, service, requested_attributes=REQUESTED_ATTRIBUT
     returns: dict, see perspective doc
     """
     analyze_request = {
-        'comment': {'text': comment},
+        'comment': {'text': truncate_str(comment)},
         'languages': languages,
         'requestedAttributes': requested_attributes
     }
@@ -40,6 +41,10 @@ def parse_summary_scores(response):
     """given a response from the perspective API, return the summary score for each metric present"""
     scores = response['attributeScores']
     return {score_name: scores[score_name]['summaryScore']['value'] for score_name in scores}
+
+
+def truncate_str(s, n_bytes=20480):
+    return s.encode('utf-8')[:n_bytes].decode('utf-8', 'ignore')
 
 
 def get_toxicity_scores(comments, perspective_key, max_retries=3, requested_attributes=REQUESTED_ATTRIBUTES_TOXICITY,

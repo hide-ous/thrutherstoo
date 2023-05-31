@@ -16,6 +16,7 @@ from dotenv import load_dotenv, find_dotenv
 from gensim.models import Word2Vec, KeyedVectors
 from gensim.test.utils import datapath
 from googleapiclient import discovery
+from tqdm import tqdm
 
 from src.data.make_dataset import CONSPIRACY_THEORIST_RE, CONSPIRACY_SUBREDDITS, \
     DEFAULT_SUBREDDITS
@@ -494,15 +495,14 @@ def enhance_with_perspective(max_retries=3, requested_attributes=REQUESTED_ATTRI
 
     for input_fpath in [
         labeling_fpath,
-        sample_fpath,
-        ct_sample_fpath,
-        default_sample_fpath,
-        discussion_fpath,
+        # sample_fpath,
+        # ct_sample_fpath,
+        # default_sample_fpath,
+        # discussion_fpath,
     ]:
-        output_fpath = os.path.join(out_dir, os.path.split(input_fpath)[:-1].replace('.jsonl', '_perspective.jsonl'))
+        output_fpath = os.path.join(out_dir, os.path.split(input_fpath)[-1].replace('.jsonl', '_perspective.jsonl'))
         with open(input_fpath, encoding='utf8') as f, open(output_fpath, 'w+', encoding='utf8') as outf:
-            perspectives = dict()
-            for contribution in map(json.loads, f):
+            for contribution in tqdm(map(json.loads, f), desc=f'processing {os.path.split(input_fpath)[-1]}'):
                 fullname, text = contribution['fullname'], contribution['text']
                 retries = 0
                 done = False
@@ -520,9 +520,7 @@ def enhance_with_perspective(max_retries=3, requested_attributes=REQUESTED_ATTRI
                             logger.warning(e)
                             retries += 1
                             time.sleep(60)
-                perspectives[fullname] = score
-            for k, v in perspectives.items():
-                outf.write(json.dumps({k: v}) + '\n')
+                outf.write(json.dumps({fullname: score}, sort_keys=True) + '\n')
 
 
 if __name__ == '__main__':
