@@ -129,7 +129,7 @@ def get_matchers(lexica):
         the_regex= r'(?P<{}>{})'.format(lexicon_name, lexicon_re)
         regexes.append(the_regex)
     regexes.append(r'(?P<Tokens>\b\w+\b)')
-    return [re.compile(regex, flags=re.I|re.M|re.U|re.DOTALL) for regex in regexes]
+    return regexes
     # return re.compile(r'|'.join(regexes), flags=re.I|re.M|re.U|re.DOTALL)
 
 def match_sent(sent: str, matchers):
@@ -139,10 +139,12 @@ def match_sent(sent: str, matchers):
     """
     to_return=defaultdict(list)
     for matcher in matchers:
-        for match in re.finditer(matcher, sent):
+        for match in re.finditer(matcher, sent.lower()
+                                 ):
             for lex_name, matched_word in match.groupdict().items():
                 if matched_word is not None:
                     to_return[lex_name].append(matched_word)
+    # print(to_return)
     return dict(to_return)
 
 def bag_of_lexicons(sent:str, matcher):

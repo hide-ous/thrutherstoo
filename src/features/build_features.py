@@ -549,8 +549,6 @@ def enhance_with_liwc(n_threads=4):
     labeling_fpath = os.path.join(interim_dir,
                                   'labeling_contributions_preprocessed_no_bot.jsonl')
 
-    labeling_fpath = os.path.join(interim_dir,
-                                  'labeling_contributions_preprocessed.jsonl')
     k = 100000
     sample_fpath = os.path.join(interim_dir,
                                 f'sample_contributions_{k}_preprocessed.jsonl')
@@ -570,9 +568,9 @@ def enhance_with_liwc(n_threads=4):
 
     for input_fpath in [
         labeling_fpath,
-        # sample_fpath,
-        # ct_sample_fpath,
-        # default_sample_fpath,
+        sample_fpath,
+        ct_sample_fpath,
+        default_sample_fpath,
         # discussion_fpath,
     ]:
         output_fpath = os.path.join(out_dir,
