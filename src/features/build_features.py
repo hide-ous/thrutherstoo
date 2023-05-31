@@ -534,7 +534,7 @@ def enhance_with_perspective(max_retries=3,
                 outf.write(json.dumps({fullname: score}, sort_keys=True) + '\n')
 
 
-def enhance_with_liwc(n_threads=4):
+def enhance_with_liwc(n_threads=40):
     logger = logging.getLogger()
     project_dir = Path(__file__).resolve().parents[2]
 
