@@ -12,15 +12,20 @@ from multiprocessing.pool import Pool
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 from dotenv import load_dotenv, find_dotenv
 from gensim.models import Word2Vec, KeyedVectors
 from gensim.test.utils import datapath
 from googleapiclient import discovery
+from tqdm import tqdm
 
 from src.data.make_dataset import CONSPIRACY_THEORIST_RE, CONSPIRACY_SUBREDDITS, \
     DEFAULT_SUBREDDITS
 from src.features.gensim_word2vec_procrustes_align import align_years
-from src.features.perspective import get_toxicity_score, REQUESTED_ATTRIBUTES_TOXICITY, REQUESTED_ATTRIBUTES_ALL
+from src.features.liwcifer import read_liwc, df_liwcifer, \
+    get_matchers
+from src.features.perspective import get_toxicity_score, \
+    REQUESTED_ATTRIBUTES_TOXICITY, REQUESTED_ATTRIBUTES_ALL
 from src.features.preprocess_text import clean_items, preprocess_pre_tokenizing
 from src.utils import to_file
 
@@ -397,7 +402,8 @@ def separate_contributions_by_year():
             logger.info(
                 f"preparing {os.path.join(interim_dir, 'text_years', folder_name)}")
             for item in map(json.loads, f):
-                if ('subreddit' in item) and (item['subreddit'] not in subreddits): continue
+                if ('subreddit' in item) and (
+                        item['subreddit'] not in subreddits): continue
                 item_date = datetime.datetime.fromtimestamp(
                     float(item['created_utc']))
                 item_year = item_date.year
@@ -434,7 +440,8 @@ def merge_samples_with_labeling_contributions():
         for fname in os.listdir(
                 os.path.join(interim_dir, 'text_years', dirname)):
             labeling_fpath = os.path.join(interim_dir, 'text_years',
-                                          'labeling_ct' if dirname.startswith('ct') else 'labeling_default',
+                                          'labeling_ct' if dirname.startswith(
+                                              'ct') else 'labeling_default',
                                           fname)
             regular_fpath = os.path.join(interim_dir, 'text_years', dirname,
                                          fname)
@@ -460,11 +467,13 @@ def align_embeddings(max_year=2022, min_year=2012):
     embedding_dir = os.path.join(interim_dir, 'embeddings')
     aligned_embedding_dir = os.path.join(interim_dir, 'aligned_embeddings')
     for dirname in os.listdir(embedding_dir):
-        align_years(in_dir=os.path.join(embedding_dir, dirname), out_dir=os.path.join(aligned_embedding_dir, dirname),
+        align_years(in_dir=os.path.join(embedding_dir, dirname),
+                    out_dir=os.path.join(aligned_embedding_dir, dirname),
                     max_year=max_year, min_year=min_year)
 
 
-def enhance_with_perspective(max_retries=3, requested_attributes=REQUESTED_ATTRIBUTES_ALL,
+def enhance_with_perspective(max_retries=3,
+                             requested_attributes=REQUESTED_ATTRIBUTES_ALL,
                              languages=['en']):
     logger = logging.getLogger()
     project_dir = Path(__file__).resolve().parents[2]
@@ -488,7 +497,8 @@ def enhance_with_perspective(max_retries=3, requested_attributes=REQUESTED_ATTRI
     # create the api connector and authenticate
     load_dotenv(find_dotenv())
     perspective_key = os.environ['PERSPECTIVE_KEY']
-    service = discovery.build('commentanalyzer', 'v1alpha1', developerKey=perspective_key,
+    service = discovery.build('commentanalyzer', 'v1alpha1',
+                              developerKey=perspective_key,
                               discoveryServiceUrl="https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1",
                               static_discovery=False, )
 
@@ -499,8 +509,11 @@ def enhance_with_perspective(max_retries=3, requested_attributes=REQUESTED_ATTRI
         default_sample_fpath,
         discussion_fpath,
     ]:
-        output_fpath = os.path.join(out_dir, os.path.split(input_fpath)[:-1].replace('.jsonl', '_perspective.jsonl'))
-        with open(input_fpath, encoding='utf8') as f, open(output_fpath, 'w+', encoding='utf8') as outf:
+        output_fpath = os.path.join(out_dir,
+                                    os.path.split(input_fpath)[:-1].replace(
+                                        '.jsonl', '_perspective.jsonl'))
+        with open(input_fpath, encoding='utf8') as f, open(output_fpath, 'w+',
+                                                           encoding='utf8') as outf:
             perspectives = dict()
             for contribution in map(json.loads, f):
                 fullname, text = contribution['fullname'], contribution['text']
@@ -509,7 +522,9 @@ def enhance_with_perspective(max_retries=3, requested_attributes=REQUESTED_ATTRI
                 score = np.nan
                 while (not done) and (retries < max_retries):
                     try:
-                        score = get_toxicity_score(text, service, requested_attributes, languages)
+                        score = get_toxicity_score(text, service,
+                                                   requested_attributes,
+                                                   languages)
                         done = True
                     except Exception as e:
                         if e.resp['status'] == '400':
@@ -525,6 +540,68 @@ def enhance_with_perspective(max_retries=3, requested_attributes=REQUESTED_ATTRI
                 outf.write(json.dumps({k: v}) + '\n')
 
 
+def enhance_with_liwc(n_threads=4):
+    logger = logging.getLogger()
+    project_dir = Path(__file__).resolve().parents[2]
+
+    interim_dir = os.path.join(project_dir, 'data', 'interim')
+
+    labeling_fpath = os.path.join(interim_dir,
+                                  'labeling_contributions_preprocessed_no_bot.jsonl')
+
+    labeling_fpath = os.path.join(interim_dir,
+                                  'labeling_contributions_preprocessed.jsonl')
+    k = 100000
+    sample_fpath = os.path.join(interim_dir,
+                                f'sample_contributions_{k}_preprocessed.jsonl')
+    ct_sample_fpath = os.path.join(project_dir, 'data', 'interim',
+                                   f'sample_contributions_{k}_ct_preprocessed.jsonl')
+    default_sample_fpath = os.path.join(project_dir, 'data', 'interim',
+                                        f'sample_contributions_{k}_default_preprocessed.jsonl')
+    discussion_fpath = os.path.join(interim_dir,
+                                    'labeling_discussions_all_filtered_preprocessed_no_bot.jsonl')
+    out_dir = os.path.join(interim_dir, 'liwc')
+    os.makedirs(out_dir, exist_ok=True)
+
+    lexicon_path = os.path.join(project_dir, 'data', 'external',
+                                'LIWC2015.jsonl')
+    lexica = read_liwc(lexicon_path)
+    matcher = get_matchers(lexica)
+
+    for input_fpath in [
+        labeling_fpath,
+        # sample_fpath,
+        # ct_sample_fpath,
+        # default_sample_fpath,
+        # discussion_fpath,
+    ]:
+        output_fpath = os.path.join(out_dir,
+                                    os.path.split(input_fpath)[-1].replace(
+                                        '.jsonl',
+                                        '_liwc.jsonl'))
+        with open(output_fpath, 'w+', encoding='utf8') as outf:
+            pool = Pool(n_threads)
+            for liwcs in tqdm(pool.imap_unordered(
+                    partial(df_liwcifer, text_col='preprocessed_text',
+                            matcher=matcher),
+                    map(lambda chunk: chunk.set_index('fullname')[
+                        ['preprocessed_text']],
+                        pd.read_json(input_fpath, lines=True, chunksize=10000,
+                                     encoding='utf8'))) ,
+            desc=f'processing {output_fpath}'):
+                for k, v in liwcs.to_dict(orient='index').items():
+                    outf.write(json.dumps({k: v}) + '\n')
+
+            # for chunk in pd.read_json(input_fpath, lines=True, chunksize=1000,
+            #                           encoding='utf8'):
+            #     liwcs = df_liwcifer(
+            #         chunk.set_index('fullname')[['preprocessed_text']],
+            #         'preprocessed_text', matcher)
+            #
+            #     for k, v in liwcs.to_dict(orient='index').items():
+            #         outf.write(json.dumps({k: v}) + '\n')
+
+
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
@@ -535,4 +612,5 @@ if __name__ == '__main__':
     # merge_samples_with_labeling_contributions()
     # build_embeddings()
     # align_embeddings()
-    enhance_with_perspective()
+    # enhance_with_perspective()
+    enhance_with_liwc()
