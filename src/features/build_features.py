@@ -5,17 +5,22 @@ import os
 import pickle
 import random
 import re
+import time
 from functools import partial
 from itertools import islice
 from multiprocessing.pool import Pool
 from pathlib import Path
 
+import numpy as np
+from dotenv import load_dotenv, find_dotenv
 from gensim.models import Word2Vec, KeyedVectors
 from gensim.test.utils import datapath
+from googleapiclient import discovery
 
 from src.data.make_dataset import CONSPIRACY_THEORIST_RE, CONSPIRACY_SUBREDDITS, \
     DEFAULT_SUBREDDITS
 from src.features.gensim_word2vec_procrustes_align import align_years
+from src.features.perspective import get_toxicity_score, REQUESTED_ATTRIBUTES_TOXICITY, REQUESTED_ATTRIBUTES_ALL
 from src.features.preprocess_text import clean_items, preprocess_pre_tokenizing
 from src.utils import to_file
 
@@ -459,13 +464,75 @@ def align_embeddings(max_year=2022, min_year=2012):
                     max_year=max_year, min_year=min_year)
 
 
+def enhance_with_perspective(max_retries=3, requested_attributes=REQUESTED_ATTRIBUTES_ALL,
+                             languages=['en']):
+    logger = logging.getLogger()
+    project_dir = Path(__file__).resolve().parents[2]
+
+    interim_dir = os.path.join(project_dir, 'data', 'interim')
+
+    labeling_fpath = os.path.join(interim_dir,
+                                  'labeling_contributions_preprocessed_no_bot.jsonl')
+    k = 100000
+    sample_fpath = os.path.join(interim_dir,
+                                f'sample_contributions_{k}_preprocessed.jsonl')
+    ct_sample_fpath = os.path.join(project_dir, 'data', 'interim',
+                                   f'sample_contributions_{k}_ct_preprocessed.jsonl')
+    default_sample_fpath = os.path.join(project_dir, 'data', 'interim',
+                                        f'sample_contributions_{k}_default_preprocessed.jsonl')
+    discussion_fpath = os.path.join(interim_dir,
+                                    'labeling_discussions_all_filtered_preprocessed_no_bot.jsonl')
+    out_dir = os.path.join(interim_dir, 'perspective')
+    os.makedirs(out_dir, exist_ok=True)
+
+    # create the api connector and authenticate
+    load_dotenv(find_dotenv())
+    perspective_key = os.environ['PERSPECTIVE_KEY']
+    service = discovery.build('commentanalyzer', 'v1alpha1', developerKey=perspective_key,
+                              discoveryServiceUrl="https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1",
+                              static_discovery=False, )
+
+    for input_fpath in [
+        labeling_fpath,
+        sample_fpath,
+        ct_sample_fpath,
+        default_sample_fpath,
+        discussion_fpath,
+    ]:
+        output_fpath = os.path.join(out_dir, os.path.split(input_fpath)[:-1].replace('.jsonl', '_perspective.jsonl'))
+        with open(input_fpath, encoding='utf8') as f, open(output_fpath, 'w+', encoding='utf8') as outf:
+            perspectives = dict()
+            for contribution in map(json.loads, f):
+                fullname, text = contribution['fullname'], contribution['text']
+                retries = 0
+                done = False
+                score = np.nan
+                while (not done) and (retries < max_retries):
+                    try:
+                        score = get_toxicity_score(text, service, requested_attributes, languages)
+                        done = True
+                    except Exception as e:
+                        if e.resp['status'] == '400':
+                            score = -1
+                            done = True
+                            logger.info(e)
+                        else:
+                            logger.warning(e)
+                            retries += 1
+                            time.sleep(60)
+                perspectives[fullname] = score
+            for k, v in perspectives.items():
+                outf.write(json.dumps({k: v}) + '\n')
+
+
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
     # preprocess_files()
-    # should run the notebook to find bots
-    # then, should run the filter_bots function in make_dataset
-    separate_contributions_by_year()
-    merge_samples_with_labeling_contributions()
-    build_embeddings()
-    align_embeddings()
+    # # should run the notebook to find bots
+    # # then, should run the filter_bots function in make_dataset
+    # separate_contributions_by_year()
+    # merge_samples_with_labeling_contributions()
+    # build_embeddings()
+    # align_embeddings()
+    enhance_with_perspective()
