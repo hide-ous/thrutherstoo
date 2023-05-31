@@ -565,7 +565,7 @@ def enhance_with_liwc(n_threads=4):
         sample_fpath,
         ct_sample_fpath,
         default_sample_fpath,
-        # discussion_fpath,
+        discussion_fpath,
     ]:
         output_fpath = os.path.join(out_dir,
                                     os.path.split(input_fpath)[-1].replace(
@@ -576,7 +576,7 @@ def enhance_with_liwc(n_threads=4):
             for liwcs in tqdm(pool.imap_unordered(
                     partial(df_liwcifer, text_col='preprocessed_text',
                             matcher=matcher),
-                    map(lambda chunk: chunk.set_index('fullname')[
+                    map(lambda chunk: chunk.drop_duplicates(subset=['fullname']).set_index('fullname')[
                         ['preprocessed_text']],
                         pd.read_json(input_fpath, lines=True, chunksize=10000,
                                      encoding='utf8'))) ,
