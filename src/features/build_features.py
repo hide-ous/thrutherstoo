@@ -513,16 +513,17 @@ def enhance_with_perspective(max_retries=3,
         with open(input_fpath, encoding='utf8') as f, open(output_fpath, 'w+', encoding='utf8') as outf, tqdm(desc = f'processing {os.path.split(input_fpath)[-1]}') as pbar:
             pool = Pool(5)
             for perspective in pool.imap(partial(perspective_,
-                                                 languages=languages, logger=logger, max_retries=max_retries,
-                                                 pbar=pbar,
+                                                 languages=languages, max_retries=max_retries,
                                                  requested_attributes=requested_attributes, service=service
                                                  ), chunkize_iter(map(json.loads, f), 3000)):
                 for fullname, score in perspective.items():
                     outf.write(json.dumps({fullname: score}, sort_keys=True) + '\n')
+                    pbar.update(1)
 
 
-def perspective_(contributions, languages, logger, max_retries, pbar,
+def perspective_(contributions, languages, max_retries,
                 requested_attributes, service):
+    logger = logging.getLogger()
     perspective = dict()
     for contribution in contributions:
 
@@ -546,7 +547,6 @@ def perspective_(contributions, languages, logger, max_retries, pbar,
                     retries += 1
                     time.sleep(60)
         perspective[fullname] = score
-        pbar.update(1)
     return perspective
 
 
