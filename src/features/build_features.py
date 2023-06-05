@@ -511,33 +511,43 @@ def enhance_with_perspective(max_retries=3,
     ][::-1]:
         output_fpath = os.path.join(out_dir, os.path.split(input_fpath)[-1].replace('.jsonl', '_perspective.jsonl'))
         with open(input_fpath, encoding='utf8') as f, open(output_fpath, 'w+', encoding='utf8') as outf, tqdm(desc = f'processing {os.path.split(input_fpath)[-1]}') as pbar:
-            for contributions in chunkize_iter(map(json.loads, f), 3000):
-                perspective = dict()
-                for contribution in contributions:
+            pool = Pool(5)
+            for perspective in pool.imap(partial(perspective_,
+                                                 languages=languages, logger=logger, max_retries=max_retries,
+                                                 pbar=pbar,
+                                                 requested_attributes=requested_attributes, service=service
+                                                 ), chunkize_iter(map(json.loads, f), 3000)):
+                for fullname, score in perspective.items():
+                    outf.write(json.dumps({fullname: score}, sort_keys=True) + '\n')
 
-                    fullname, text = contribution['fullname'], contribution['text']
-                    retries = 0
-                    done = False
-                    score = np.nan
-                    while (not done) and (retries < max_retries):
-                        try:
-                            score = get_toxicity_score(text, service,
-                                                       requested_attributes,
-                                                       languages)
-                            done = True
-                        except Exception as e:
-                            if e.resp['status'] == '400':
-                                score = -1
-                                done = True
-                                logger.info(e)
-                            else:
-                                logger.warning(e)
-                                retries += 1
-                                time.sleep(60)
-                    perspective[fullname]=score
-                    pbar.update(1)
-            for fullname, score in perspective.items():
-                outf.write(json.dumps({fullname: score}, sort_keys=True) + '\n')
+
+def perspective_(contributions, languages, logger, max_retries, pbar,
+                requested_attributes, service):
+    perspective = dict()
+    for contribution in contributions:
+
+        fullname, text = contribution['fullname'], contribution['text']
+        retries = 0
+        done = False
+        score = np.nan
+        while (not done) and (retries < max_retries):
+            try:
+                score = get_toxicity_score(text, service,
+                                           requested_attributes,
+                                           languages)
+                done = True
+            except Exception as e:
+                if e.resp['status'] == '400':
+                    score = -1
+                    done = True
+                    logger.info(e)
+                else:
+                    logger.warning(e)
+                    retries += 1
+                    time.sleep(60)
+        perspective[fullname] = score
+        pbar.update(1)
+    return perspective
 
 
 def enhance_with_liwc(n_threads=40):
