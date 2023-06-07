@@ -3,6 +3,7 @@ import datetime
 import json
 import os.path
 import re
+from collections import defaultdict
 from json import JSONDecodeError
 
 import logging
@@ -373,27 +374,25 @@ def divide_discussions(in_fpath, subreddit_subsets={'ct': CONSPIRACY_SUBREDDITS,
 
 def subsample_further(in_dir, n_per_mo=10000):
     logger = logging.getLogger()
+
+    def dt_to_months_since(created_utc):
+        d = datetime.datetime.fromtimestamp(float(created_utc))
+        return d.year, d.month
+
     for fname in os.listdir(in_dir):
         if not (fname.startswith('sample_contribution') and fname.endswith('preprocessed.jsonl')):
             continue
         logger.info(f'processing {fname}')
-        df = pd.read_json(os.path.join(in_dir, fname), lines=True)
-        logger.info(f'read df')
-        def dt_to_months_since(created_utc):
-            d = datetime.datetime.fromtimestamp(created_utc)
-            return pd.Series({'month':d.month, 'year':d.year})
-        logger.info(f'extracting dates')
-        grouper = df.created_utc.astype(np.float).apply(dt_to_months_since)
-
-        logger.info(f'subsampling')
-        df = df.groupby(grouper).apply(lambda x: x.sample(n_per_mo)).reset_index()
-        # del df['month']
-        # del df['year']
+        algos = defaultdict(lambda: AlgorithmL(n_per_mo))
+        with open(os.path.join(in_dir, fname), encoding='utf8') as f:
+            for contribution in map(json.loads, f):
+                algos[dt_to_months_since(contribution['created_utc'])].add(contribution)
+        logger.info(f'read {fname}')
         out_fname = os.path.join(in_dir, fname.replace('100000', f'{n_per_mo}'))
-        logger.info(f'writing to {out_fname}')
-
-        df.to_json(out_fname, lines=True)
-
+        with open(out_fname, 'w+', encoding='utf8') as outf:
+            for _, algo in sorted(algos.items(), key=lambda x:x[0]):
+                for contribution in algo.reservoir:
+                    outf.write(json.dumps(contribution, sort_keys=True) + '\n')
 
 
 if __name__ == '__main__':
