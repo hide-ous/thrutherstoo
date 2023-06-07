@@ -18,8 +18,24 @@ from zstandard import ZstdError
 from src.data.collect_reddit import search_pushshift
 
 CONSPIRACY_THEORIST_RE = '(conspiracist)|(conspiracy theorist)'
-CONSPIRACY_SUBREDDITS = ["984isreality","911truth","actualconspiracies","Bilderberg","C_S_T","CHEMPRINTS","Chemtrail","chemtrails","chrisolivertimes","climateskeptics","ClintonInvestigation","conspiracies","conspiracy","conspiracy_commons","conspiracydocumentary","conspiracyfact","conspiracyhub","ConspiracyII","ConspiracyPublic","conspiracytheories","ConspiracyTheory","conspiracyundone","ConspiracyX","ConspiracyZone","conspiro","CorporateMalfeasance","CosmicDisclosure","DescentIntoTyranny","DigitalCartel","FalseFlagWatch","finlandConspiracy","FringeTheory","HealthConspiracy","highersidechats","HOLLOWEARTH","LimitedHangouts","moonhoax","notaglobe","OccultConspiracy","OccupyLangley","PedoGate","PoliticalConspiracy","ProConspiracy","ProjectSTARGATE","reptiliandude","reptilians","RomeRules","TargetedEnergyWeapons","TargetedIndividuals","theworldisflat","TopConspiracy","TruthLeaks","UNAgenda21","VaccinesCause","WhereIsAssange"]
-DEFAULT_SUBREDDITS = ["AskReddit","announcements","funny","pics","todayilearned","science","IAmA","blog","videos","worldnews","gaming","movies","Music","aww","news","gifs","askscience","explainlikeimfive","EarthPorn","books","television","LifeProTips","sports","DIY","Showerthoughts","space","Jokes","tifu","food","photoshopbattles","Art","InternetIsBeautiful","mildlyinteresting","GetMotivated","history","nottheonion","gadgets","dataisbeautiful","Futurology","Documentaries","listentothis","personalfinance","philosophy","nosleep","creepy","OldSchoolCool","UpliftingNews","WritingPrompts","TwoXChromosomes"]
+CONSPIRACY_SUBREDDITS = ["984isreality", "911truth", "actualconspiracies", "Bilderberg", "C_S_T", "CHEMPRINTS",
+                         "Chemtrail", "chemtrails", "chrisolivertimes", "climateskeptics", "ClintonInvestigation",
+                         "conspiracies", "conspiracy", "conspiracy_commons", "conspiracydocumentary", "conspiracyfact",
+                         "conspiracyhub", "ConspiracyII", "ConspiracyPublic", "conspiracytheories", "ConspiracyTheory",
+                         "conspiracyundone", "ConspiracyX", "ConspiracyZone", "conspiro", "CorporateMalfeasance",
+                         "CosmicDisclosure", "DescentIntoTyranny", "DigitalCartel", "FalseFlagWatch",
+                         "finlandConspiracy", "FringeTheory", "HealthConspiracy", "highersidechats", "HOLLOWEARTH",
+                         "LimitedHangouts", "moonhoax", "notaglobe", "OccultConspiracy", "OccupyLangley", "PedoGate",
+                         "PoliticalConspiracy", "ProConspiracy", "ProjectSTARGATE", "reptiliandude", "reptilians",
+                         "RomeRules", "TargetedEnergyWeapons", "TargetedIndividuals", "theworldisflat", "TopConspiracy",
+                         "TruthLeaks", "UNAgenda21", "VaccinesCause", "WhereIsAssange"]
+DEFAULT_SUBREDDITS = ["AskReddit", "announcements", "funny", "pics", "todayilearned", "science", "IAmA", "blog",
+                      "videos", "worldnews", "gaming", "movies", "Music", "aww", "news", "gifs", "askscience",
+                      "explainlikeimfive", "EarthPorn", "books", "television", "LifeProTips", "sports", "DIY",
+                      "Showerthoughts", "space", "Jokes", "tifu", "food", "photoshopbattles", "Art",
+                      "InternetIsBeautiful", "mildlyinteresting", "GetMotivated", "history", "nottheonion", "gadgets",
+                      "dataisbeautiful", "Futurology", "Documentaries", "listentothis", "personalfinance", "philosophy",
+                      "nosleep", "creepy", "OldSchoolCool", "UpliftingNews", "WritingPrompts", "TwoXChromosomes"]
 
 
 # @click.command()
@@ -144,13 +160,12 @@ def collect_discussions(input_fpath, output_dir,
         pool.map(filter_discussions_, args)
 
 
-
 def filter_authors_(args):
     return filter_authors(*args)
 
 
 def filter_authors(input_filepath, output_filepath,
-                       filter_values):
+                   filter_values):
     logger = logging.getLogger(__name__)
     logger.info('filtering authors')
     logger.info(f'{input_filepath} to {output_filepath}')
@@ -165,7 +180,7 @@ def filter_authors(input_filepath, output_filepath,
 
 
 def args_builder_authors(contribution_fpaths, output_dir, output_suffix,
-                             filter_values):
+                         filter_values):
     args = list()
     for infile in contribution_fpaths:
         outfile = os.path.split(infile)[-1][:-len('.zst')] + output_suffix
@@ -174,8 +189,8 @@ def args_builder_authors(contribution_fpaths, output_dir, output_suffix,
     return args
 
 
-def collect_authors(input_fpath, bot_fpath, output_dir, #author_fpath,
-                        output_suffix='_labelers.jsonl'):
+def collect_authors(input_fpath, bot_fpath, output_dir,  # author_fpath,
+                    output_suffix='_labelers.jsonl'):
     with open(input_fpath, encoding='utf8') as f:
         authors = set(
             i['author'] for i in
@@ -194,8 +209,10 @@ def collect_authors(input_fpath, bot_fpath, output_dir, #author_fpath,
 
     with Pool(40) as pool:
         args = args_builder_authors(contribution_fpaths, output_dir,
-                                        output_suffix, authors)
+                                    output_suffix, authors)
         pool.map(filter_authors_, args)
+
+
 def get_contribution_fpaths():
     load_dotenv(find_dotenv())
     pushshift_dir = os.environ['PUSHSHIFT_DIR']
@@ -300,6 +317,7 @@ def sample_contributions(k, output_dir,
     with Pool(40) as pool:
         pool.map(sample_instances_, args)
 
+
 def filter_bots():
     logger = logging.getLogger(__name__)
     logger.info('filtering bots')
@@ -314,13 +332,13 @@ def filter_bots():
         botnames = set(i.strip() for i in f)
 
     # filter labeling contributions
-    no_bot_suffix='_no_bot.'
+    no_bot_suffix = '_no_bot.'
     # find discussions from labeling contributions while at it
     labeling_discussions = set()
     labeling_fpath = os.path.join(interim_dir,
                                   'labeling_contributions_preprocessed.jsonl')
     logger.info('filtering labeling contributions')
-    with open(labeling_fpath, encoding='utf8') as f,\
+    with open(labeling_fpath, encoding='utf8') as f, \
             open(labeling_fpath.replace('.', no_bot_suffix), 'w+', encoding='utf8') as fout:
         for line in f:
             contribution = json.loads(line)
@@ -332,7 +350,7 @@ def filter_bots():
     logger.info('filtering discussions')
     discussion_fpath = os.path.join(interim_dir,
                                     'labeling_discussions_all_filtered_preprocessed.jsonl')
-    with open(discussion_fpath, encoding='utf8') as f,\
+    with open(discussion_fpath, encoding='utf8') as f, \
             open(discussion_fpath.replace('.', no_bot_suffix), 'w+', encoding='utf8') as fout:
         for line in f:
             contribution = json.loads(line)
@@ -340,15 +358,16 @@ def filter_bots():
                 fout.write(line)
 
 
-def divide_discussions(in_fpath, subreddit_subsets={'ct':CONSPIRACY_SUBREDDITS,
-                                                    'default':DEFAULT_SUBREDDITS}):
+def divide_discussions(in_fpath, subreddit_subsets={'ct': CONSPIRACY_SUBREDDITS,
+                                                    'default': DEFAULT_SUBREDDITS}):
     with open(in_fpath, encoding='utf8') as f:
         for infix, subreddits in subreddit_subsets.items():
             out_fname = in_fpath.replace('preprocessed', f'preprocessed_{infix}')
             with open(out_fname, 'w+', encoding='utf8') as outf:
                 for contribution in map(json.loads, f):
                     if contribution.get('subreddit', None) in subreddits:
-                        outf.write(json.dumps(contribution)+'\n')
+                        outf.write(json.dumps(contribution) + '\n')
+
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -358,7 +377,6 @@ if __name__ == '__main__':
     project_dir = Path(__file__).resolve().parents[2]
     interim_dir = os.path.join(project_dir, 'data', 'interim')
     raw_dir = os.path.join(project_dir, 'data', 'raw')
-
 
     # parse_files(os.path.join(project_dir, 'data', 'interim'))
     # labeling_fpath = os.path.join(project_dir, 'data', 'interim',
