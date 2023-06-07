@@ -614,7 +614,7 @@ if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
     # preprocess_files()
-    # # should run the notebook to find bots
+    # # should run the notebook to find bots notebooks/inspect_bot_authors
     # # then, should run the filter_bots function in make_dataset
     # separate_contributions_by_year()
     # merge_samples_with_labeling_contributions()

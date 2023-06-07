@@ -340,6 +340,10 @@ def filter_bots():
                 fout.write(line)
 
 
+def divide_discussions(in_fpath, subreddit_subsets={'ct':CONSPIRACY_SUBREDDITS,
+                                                    'default':DEFAULT_SUBREDDITS}):
+    pass
+
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
