@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import datetime
 import json
 import os.path
 import re
@@ -9,6 +10,7 @@ from multiprocessing import Pool
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 from dotenv import find_dotenv, load_dotenv
 import zstandard as zstd
 import io
@@ -369,6 +371,26 @@ def divide_discussions(in_fpath, subreddit_subsets={'ct': CONSPIRACY_SUBREDDITS,
                         outf.write(json.dumps(contribution) + '\n')
 
 
+def subsample_further(in_dir, n_per_mo=10000):
+    logger = logging.getLogger()
+    for fname in os.listdir(in_dir):
+        logger.info(f'processing {fname}')
+        if not (fname.startswith('sample_contribution') and fname.endswith('preprocessed.jsonl')):
+            continue
+        df = pd.read_json(os.path.join(in_dir, fname), lines=True)
+        def dt_to_months_since(created_utc):
+            d = datetime.datetime.fromtimestamp(created_utc)
+            return pd.Series({'month':d.month, 'year':d.year})
+        df['month'], df['year'] = df.created_utc.astype(np.float).apply(dt_to_months_since)
+        df = df.groupby(['month', 'year']).apply(lambda x: x.sample(n_per_mo)).reset_index()
+        del df['month']
+        del df['year']
+        out_fname = os.path.join(in_dir, fname.replace('100000', f'{n_per_mo}'))
+
+        df.to_json(out_fname, lines=True)
+
+
+
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
@@ -438,4 +460,5 @@ if __name__ == '__main__':
     #                   labeler_fpath,
     #                   file_suffix=labeler_suffix)
 
-    divide_discussions(os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"))
+    # divide_discussions(os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"))
+    subsample_further(interim_dir)
