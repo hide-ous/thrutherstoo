@@ -342,7 +342,13 @@ def filter_bots():
 
 def divide_discussions(in_fpath, subreddit_subsets={'ct':CONSPIRACY_SUBREDDITS,
                                                     'default':DEFAULT_SUBREDDITS}):
-    pass
+    with open(in_fpath, encoding='utf8') as f:
+        for infix, subreddits in subreddit_subsets.items():
+            out_fname = in_fpath.replace('preprocessed', f'preprocessed_{infix}')
+            with open(out_fname, 'w+', encoding='utf8') as outf:
+                for contribution in map(json.loads, f):
+                    if contribution.get('subreddit', None) in subreddits:
+                        outf.write(json.dumps(contribution)+'\n')
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -401,16 +407,17 @@ if __name__ == '__main__':
     #
     # filter_bots()
 
-    labeler_suffix = '_labelers.jsonl'
+    # labeler_suffix = '_labelers.jsonl'
+    #
+    # filtered_authors_fpath = os.path.join(interim_dir, 'labeling_contributions_preprocessed_no_bot.jsonl')
+    # collect_authors(input_fpath=filtered_authors_fpath,
+    #                 bot_fpath=os.path.join(raw_dir, 'botnames_expanded.txt'),
+    #                 output_dir=interim_dir,
+    #                 output_suffix=labeler_suffix)
+    # labeler_fpath = os.path.join(project_dir, 'data', 'interim',
+    #                             f'labelers_all.jsonl')
+    # consolidate_files(interim_dir,
+    #                   labeler_fpath,
+    #                   file_suffix=labeler_suffix)
 
-    filtered_authors_fpath = os.path.join(interim_dir, 'labeling_contributions_preprocessed_no_bot.jsonl')
-    collect_authors(input_fpath=filtered_authors_fpath,
-                    bot_fpath=os.path.join(raw_dir, 'botnames_expanded.txt'),
-                    output_dir=interim_dir,
-                    output_suffix=labeler_suffix)
-    labeler_fpath = os.path.join(project_dir, 'data', 'interim',
-                                f'labelers_all.jsonl')
-    consolidate_files(interim_dir,
-                      labeler_fpath,
-                      file_suffix=labeler_suffix)
-
+    divide_discussions(os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"))
