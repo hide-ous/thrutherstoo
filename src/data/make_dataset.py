@@ -374,18 +374,23 @@ def divide_discussions(in_fpath, subreddit_subsets={'ct': CONSPIRACY_SUBREDDITS,
 def subsample_further(in_dir, n_per_mo=10000):
     logger = logging.getLogger()
     for fname in os.listdir(in_dir):
-        logger.info(f'processing {fname}')
         if not (fname.startswith('sample_contribution') and fname.endswith('preprocessed.jsonl')):
             continue
+        logger.info(f'processing {fname}')
         df = pd.read_json(os.path.join(in_dir, fname), lines=True)
+        logger.info(f'read df')
         def dt_to_months_since(created_utc):
             d = datetime.datetime.fromtimestamp(created_utc)
             return pd.Series({'month':d.month, 'year':d.year})
-        df['month'], df['year'] = df.created_utc.astype(np.float).apply(dt_to_months_since)
-        df = df.groupby(['month', 'year']).apply(lambda x: x.sample(n_per_mo)).reset_index()
-        del df['month']
-        del df['year']
+        logger.info(f'extracting dates')
+        grouper = df.created_utc.astype(np.float).apply(dt_to_months_since)
+
+        logger.info(f'subsampling')
+        df = df.groupby(grouper).apply(lambda x: x.sample(n_per_mo)).reset_index()
+        # del df['month']
+        # del df['year']
         out_fname = os.path.join(in_dir, fname.replace('100000', f'{n_per_mo}'))
+        logger.info(f'writing to {out_fname}')
 
         df.to_json(out_fname, lines=True)
 
