@@ -366,13 +366,13 @@ def separate_contributions_by_year():
 
     os.makedirs(os.path.join(interim_dir, 'text_years'), exist_ok=True)
     for folder_name, input_fpath in [
-        # ("labeling", labeling_fpath),
+        ("labeling", labeling_fpath),
         #                              ("sample", sample_fpath),
         #                              ("ct_sample", ct_sample_fpath),
         #                              ("default_sample", default_sample_fpath),
         # ("discussions", discussion_fpath),
         ("discussions_ct", discussion_ct_fpath),
-        # ("discussions_default", discussion_default_fpath)
+        ("discussions_default", discussion_default_fpath)
 
     ]:
         out_fhandles = dict()
@@ -523,7 +523,7 @@ def enhance_with_perspective(max_retries=3,
         # discussion_fpath,
         discussion_ct_fpath,
         discussion_default_fpath
-    ][::-1]:
+    ]:
         output_fpath = os.path.join(out_dir, os.path.split(input_fpath)[-1].replace('.jsonl', '_perspective.jsonl'))
         with open(input_fpath, encoding='utf8') as f, open(output_fpath, 'w+', encoding='utf8') as outf, tqdm(desc = f'processing {os.path.split(input_fpath)[-1]}') as pbar:
             pool = Pool(5)
@@ -638,9 +638,9 @@ if __name__ == '__main__':
     # # should run the notebook to find bots notebooks/inspect_bot_authors
     # # then, should run the filter_bots function in make_dataset
     # # then, should run the divide_discussions and subsample_further
-    separate_contributions_by_year()
-    merge_samples_with_labeling_contributions()
-    build_embeddings()
-    align_embeddings()
-    # enhance_with_perspective()
+    # separate_contributions_by_year()
+    # merge_samples_with_labeling_contributions()
+    # build_embeddings()
+    # align_embeddings()
+    enhance_with_perspective()
     # enhance_with_liwc()
