@@ -370,8 +370,8 @@ def separate_contributions_by_year():
         #                              ("sample", sample_fpath),
         #                              ("ct_sample", ct_sample_fpath),
         #                              ("default_sample", default_sample_fpath),
-        ("discussions", discussion_fpath)
-        ("discussions_ct", discussion_ct_fpath)
+        ("discussions", discussion_fpath),
+        ("discussions_ct", discussion_ct_fpath),
         ("discussions_default", discussion_default_fpath)
 
     ]:
