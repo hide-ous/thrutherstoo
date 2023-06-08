@@ -8,13 +8,15 @@ import pandas as pd
 import numpy as np
 from collections import defaultdict
 
+
 def read_liwc(lexicon_path='LIWC2015.jsonl'):
     with open(lexicon_path, 'r') as f:
         return json.load(f)
 
+
 def create_matchings(vocabulary_words, lexica):
-    #cv = CountVectorizer(input='file', max_df=.5, lowercase=True)
-    #data_sample = open(comments_path)
+    # cv = CountVectorizer(input='file', max_df=.5, lowercase=True)
+    # data_sample = open(comments_path)
     # vocabulary_words = vectorize_comments(df_comments)[1]
     # X = cv.fit(data_sample)
     # lexica = read_liwc(lexicon_path)
@@ -40,6 +42,7 @@ def create_matchings(vocabulary_words, lexica):
 
     return mapping, inverse_mapping
 
+
 def vectorize_comments(dataframe, content_field="title"):
     # returns document term matrix and feature names of data sample in file in path
     cv = CountVectorizer(max_df=.5, lowercase=True)
@@ -50,11 +53,11 @@ def vectorize_comments(dataframe, content_field="title"):
     X = cv.fit_transform(data_sample)
     return ids, cv.get_feature_names_out(), X
 
-def lex_to_regex(lexicon_list):
 
+def lex_to_regex(lexicon_list):
     regex = ''
     for term in lexicon_list:
-        term = term.replace("*",".*")
+        term = term.replace("*", ".*")
         if '(discrep' in term:
             term = term.replace('(discrep)', '(?P=Discrep)')
         elif ('(' in term) and (')' in term):
@@ -62,12 +65,13 @@ def lex_to_regex(lexicon_list):
 
         else:
             # pass
-            term = term.replace(")",r"[)]")
+            term = term.replace(")", r"[)]")
             term = term.replace("(", r"[(]")
-        regex = regex + r'|\b'+ term + r'\b'
+        regex = regex + r'|\b' + term + r'\b'
     regex = regex.removeprefix('|')
     raw_s = r'{}'.format(regex)
     return raw_s
+
 
 def extract_liwcs(document_df, lexica, content_field='text'):
     ids, feature_names, X = vectorize_comments(document_df, content_field=content_field)
@@ -105,9 +109,9 @@ def extract_liwcs(document_df, lexica, content_field='text'):
     # df_index_body['len_title'] = df_index_body['title'].str.split().str.len()
     # divisor_list = df_index_body['len_title']
     # divisor_list = df_index_body.len_title.values.tolist()
-    divisor_list = X.sum(axis=1).getA1()[:,np.newaxis]#.tolist()
+    divisor_list = X.sum(axis=1).getA1()[:, np.newaxis]  # .tolist()
 
-    norm_array = np.divide(dividend_array, divisor_list, out=np.zeros_like(dividend_array), where=divisor_list!=0)
+    norm_array = np.divide(dividend_array, divisor_list, out=np.zeros_like(dividend_array), where=divisor_list != 0)
     print(divisor_list)
     print('NORMALIZED np array:')
     print(norm_array)
@@ -117,27 +121,29 @@ def extract_liwcs(document_df, lexica, content_field='text'):
     # print('test - row sums')
     # print(row_sums1)
 
+
 def get_matchers(lexica):
     regexes_dict = dict()
     for lexicon_name, lexicon_list in sorted(lexica.items()):
-        the_regex= lex_to_regex(lexicon_list)
+        the_regex = lex_to_regex(lexicon_list)
         regexes_dict[lexicon_name] = the_regex
-    regexes_dict['Posemo']=regexes_dict['Posemo'].replace('?P=Discrep', regexes_dict['Discrep'])
-    #TODO: there is a (53) group before a "like"; investigate what it means. is that the index of a LIWC category?
-    regexes =list()
+    regexes_dict['Posemo'] = regexes_dict['Posemo'].replace('?P=Discrep', regexes_dict['Discrep'])
+    # TODO: there is a (53) group before a "like"; investigate what it means. is that the index of a LIWC category?
+    regexes = list()
     for lexicon_name, lexicon_re in sorted(regexes_dict.items()):
-        the_regex= r'(?P<{}>{})'.format(lexicon_name, lexicon_re)
+        the_regex = r'(?P<{}>{})'.format(lexicon_name, lexicon_re)
         regexes.append(the_regex)
     regexes.append(r'(?P<Tokens>\b\w+\b)')
     return regexes
     # return re.compile(r'|'.join(regexes), flags=re.I|re.M|re.U|re.DOTALL)
+
 
 def match_sent(sent: str, matchers):
     """
     returns a dictionary where the key is the name of the lexicon, and the value
     a list of the matching strings
     """
-    to_return=defaultdict(list)
+    to_return = defaultdict(list)
     for matcher in matchers:
         for match in re.finditer(matcher, sent.lower()
                                  ):
@@ -147,11 +153,14 @@ def match_sent(sent: str, matchers):
     # print(to_return)
     return dict(to_return)
 
-def bag_of_lexicons(sent:str, matcher):
-    return pd.Series({k: len(v) for k, v in match_sent(sent, matcher).items()})
 
-def df_liwcifer(df:pd.DataFrame, text_col, matcher):
+def bag_of_lexicons(sent: str, matcher):
+    return pd.Series({k: len(v) for k, v in match_sent(sent, matcher).items()}, dtype=np.int)
+
+
+def df_liwcifer(df: pd.DataFrame, text_col, matcher):
     return df[text_col].apply(partial(bag_of_lexicons, matcher=matcher)).fillna(0)
+
 
 if __name__ == '__main__':
     lexicon_path = '../LIWC2015.jsonl'
@@ -161,9 +170,9 @@ if __name__ == '__main__':
     #                                     'this is another document',
     #                                     'there are so many documents in here']:
     #     print(sent, match_sent(sent, matchers))
-    document_df = pd.DataFrame({'text':['this is a document',
-                                        'this is another document',
-                                        'there are so many documents in here']},
+    document_df = pd.DataFrame({'text': ['this is a document',
+                                         'this is another document',
+                                         'there are so many documents in here']},
                                index=['a', 'b', 'c'])
-    print(df_liwcifer(document_df,'text', matchers))
+    print(df_liwcifer(document_df, 'text', matchers))
     # extract_liwcs(document_df, lexica, content_field='text')
