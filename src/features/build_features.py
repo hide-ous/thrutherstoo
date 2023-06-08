@@ -632,5 +632,5 @@ if __name__ == '__main__':
     # merge_samples_with_labeling_contributions()
     # build_embeddings()
     # align_embeddings()
-    enhance_with_perspective()
-    # enhance_with_liwc()
+    # enhance_with_perspective()
+    enhance_with_liwc()
