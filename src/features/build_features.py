@@ -358,13 +358,22 @@ def separate_contributions_by_year():
                                         f'sample_contributions_{k}_default_preprocessed.jsonl')
     discussion_fpath = os.path.join(interim_dir,
                                     'labeling_discussions_all_filtered_preprocessed_no_bot.jsonl')
+
+    discussion_ct_fpath = os.path.join(interim_dir,
+                                    'labeling_discussions_all_filtered_preprocessed_ct_no_bot.jsonl')
+    discussion_default_fpath = os.path.join(interim_dir,
+                                    'labeling_discussions_all_filtered_preprocessed_default_no_bot.jsonl')
+
     os.makedirs(os.path.join(interim_dir, 'text_years'), exist_ok=True)
     for folder_name, input_fpath in [
-        ("labeling", labeling_fpath),
+        # ("labeling", labeling_fpath),
         #                              ("sample", sample_fpath),
         #                              ("ct_sample", ct_sample_fpath),
         #                              ("default_sample", default_sample_fpath),
         ("discussions", discussion_fpath)
+        ("discussions_ct", discussion_ct_fpath)
+        ("discussions_default", discussion_default_fpath)
+
     ]:
         out_fhandles = dict()
         with open(input_fpath, encoding='utf8') as f:
@@ -628,9 +637,10 @@ if __name__ == '__main__':
     # preprocess_files()
     # # should run the notebook to find bots notebooks/inspect_bot_authors
     # # then, should run the filter_bots function in make_dataset
-    # separate_contributions_by_year()
-    # merge_samples_with_labeling_contributions()
-    # build_embeddings()
-    # align_embeddings()
+    # # then, should run the divide_discussions and subsample_further
+    separate_contributions_by_year()
+    merge_samples_with_labeling_contributions()
+    build_embeddings()
+    align_embeddings()
     # enhance_with_perspective()
-    enhance_with_liwc()
+    # enhance_with_liwc()
