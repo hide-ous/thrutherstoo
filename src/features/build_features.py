@@ -372,7 +372,7 @@ def separate_contributions_by_year():
         #                              ("default_sample", default_sample_fpath),
         # ("discussions", discussion_fpath),
         ("discussions_ct", discussion_ct_fpath),
-        ("discussions_default", discussion_default_fpath)
+        # ("discussions_default", discussion_default_fpath)
 
     ]:
         out_fhandles = dict()
