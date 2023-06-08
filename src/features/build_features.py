@@ -482,7 +482,7 @@ def enhance_with_perspective(max_retries=3,
 
     labeling_fpath = os.path.join(interim_dir,
                                   'labeling_contributions_preprocessed_no_bot.jsonl')
-    k = 100000
+    k = 10000
     sample_fpath = os.path.join(interim_dir,
                                 f'sample_contributions_{k}_preprocessed.jsonl')
     ct_sample_fpath = os.path.join(project_dir, 'data', 'interim',
@@ -491,6 +491,10 @@ def enhance_with_perspective(max_retries=3,
                                         f'sample_contributions_{k}_default_preprocessed.jsonl')
     discussion_fpath = os.path.join(interim_dir,
                                     'labeling_discussions_all_filtered_preprocessed_no_bot.jsonl')
+    discussion_ct_fpath = os.path.join(interim_dir,
+                                    'labeling_discussions_all_filtered_preprocessed_ct_no_bot.jsonl')
+    discussion_default_fpath = os.path.join(interim_dir,
+                                    'labeling_discussions_all_filtered_preprocessed_default_no_bot.jsonl')
     out_dir = os.path.join(interim_dir, 'perspective')
     os.makedirs(out_dir, exist_ok=True)
 
@@ -503,11 +507,13 @@ def enhance_with_perspective(max_retries=3,
                               static_discovery=False, )
 
     for input_fpath in [
-        # labeling_fpath,
+        labeling_fpath,
         sample_fpath,
         ct_sample_fpath,
         default_sample_fpath,
         # discussion_fpath,
+        discussion_ct_fpath,
+        discussion_default_fpath
     ][::-1]:
         output_fpath = os.path.join(out_dir, os.path.split(input_fpath)[-1].replace('.jsonl', '_perspective.jsonl'))
         with open(input_fpath, encoding='utf8') as f, open(output_fpath, 'w+', encoding='utf8') as outf, tqdm(desc = f'processing {os.path.split(input_fpath)[-1]}') as pbar:
@@ -559,7 +565,7 @@ def enhance_with_liwc(n_threads=40):
     labeling_fpath = os.path.join(interim_dir,
                                   'labeling_contributions_preprocessed_no_bot.jsonl')
 
-    k = 100000
+    k = 10000
     sample_fpath = os.path.join(interim_dir,
                                 f'sample_contributions_{k}_preprocessed.jsonl')
     ct_sample_fpath = os.path.join(project_dir, 'data', 'interim',
@@ -568,6 +574,10 @@ def enhance_with_liwc(n_threads=40):
                                         f'sample_contributions_{k}_default_preprocessed.jsonl')
     discussion_fpath = os.path.join(interim_dir,
                                     'labeling_discussions_all_filtered_preprocessed_no_bot.jsonl')
+    discussion_ct_fpath = os.path.join(interim_dir,
+                                    'labeling_discussions_all_filtered_preprocessed_ct_no_bot.jsonl')
+    discussion_default_fpath = os.path.join(interim_dir,
+                                    'labeling_discussions_all_filtered_preprocessed_default_no_bot.jsonl')
     out_dir = os.path.join(interim_dir, 'liwc')
     os.makedirs(out_dir, exist_ok=True)
 
@@ -577,11 +587,13 @@ def enhance_with_liwc(n_threads=40):
     matcher = get_matchers(lexica)
 
     for input_fpath in [
-        labeling_fpath,
+        # labeling_fpath,
         sample_fpath,
         ct_sample_fpath,
         default_sample_fpath,
-        discussion_fpath,
+        # discussion_fpath,
+        discussion_ct_fpath,
+        discussion_default_fpath
     ]:
         output_fpath = os.path.join(out_dir,
                                     os.path.split(input_fpath)[-1].replace(
