@@ -363,13 +363,16 @@ def filter_bots():
 
 def divide_discussions(in_fpath, subreddit_subsets={'ct': CONSPIRACY_SUBREDDITS,
                                                     'default': DEFAULT_SUBREDDITS}):
+    destinations = [(infix, subreddits, open(in_fpath.replace('preprocessed', f'preprocessed_{infix}'),
+                                             'w+', encoding='utf8'))
+                    for infix, subreddits in subreddit_subsets.items()]
     with open(in_fpath, encoding='utf8') as f:
-        for infix, subreddits in subreddit_subsets.items():
-            out_fname = in_fpath.replace('preprocessed', f'preprocessed_{infix}')
-            with open(out_fname, 'w+', encoding='utf8') as outf:
-                for contribution in map(json.loads, f):
-                    if contribution.get('subreddit', None) in subreddits:
-                        outf.write(json.dumps(contribution) + '\n')
+        for contribution in map(json.loads, f):
+            for infix, subreddits, outf in destinations:
+                if contribution.get('subreddit', None) in subreddits:
+                    outf.write(json.dumps(contribution) + '\n')
+    for _, _, outf in destinations:
+        outf.close()
 
 
 def subsample_further(in_dir, n_per_mo=10000):
@@ -390,7 +393,7 @@ def subsample_further(in_dir, n_per_mo=10000):
         logger.info(f'read {fname}')
         out_fname = os.path.join(in_dir, fname.replace('100000', f'{n_per_mo}'))
         with open(out_fname, 'w+', encoding='utf8') as outf:
-            for _, algo in sorted(algos.items(), key=lambda x:x[0]):
+            for _, algo in sorted(algos.items(), key=lambda x: x[0]):
                 for contribution in algo.reservoir:
                     outf.write(json.dumps(contribution, sort_keys=True) + '\n')
 
@@ -465,4 +468,7 @@ if __name__ == '__main__':
     #                   file_suffix=labeler_suffix)
 
     # divide_discussions(os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"))
-    subsample_further(interim_dir)
+
+    divide_discussions(os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"),
+                       subreddit_subsets={'default': DEFAULT_SUBREDDITS})
+    # subsample_further(interim_dir)
