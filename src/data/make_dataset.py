@@ -497,6 +497,8 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
 
 
 def compute_baseline_volume_(in_fpath, out_folder='counts'):
+    logger = logging.getLogger()
+
     cntr = Counter()
     cntr_ct = Counter()
     cntr_default = Counter()
@@ -508,6 +510,7 @@ def compute_baseline_volume_(in_fpath, out_folder='counts'):
     out_default_fpath = os.path.join(in_folder, out_folder, in_fname.replace('.zst', '_default_counts.json'))
     os.makedirs(os.path.dirname(out_fpath), exist_ok=True)
 
+    logger.info(f'processing {in_fname}')
     for contribution in read_zst(in_fpath):
         timestamp = contribution.get('created_utc', None)
         if timestamp:
@@ -518,6 +521,7 @@ def compute_baseline_volume_(in_fpath, out_folder='counts'):
                 cntr_ct[truncated_timestamp] += 1
             elif contribution.get('subreddit', None) in DEFAULT_SUBREDDITS:
                 cntr_default[truncated_timestamp] += 1
+    logger.info(f'writing to {out_fpath}')
     with open(out_fpath, 'w+') as f:
         f.write(json.dumps(cntr, sort_keys=True))
     with open(out_ct_fpath, 'w+') as f:
