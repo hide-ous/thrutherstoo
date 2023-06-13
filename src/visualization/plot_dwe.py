@@ -36,7 +36,8 @@ def fit_tsne(values):
     return fitted
 
 
-def get_time_sims(embed_dict, word1, min_sim=0.3, n_neighbors=15, blacklisted_words={'conspiracy', 'theory', 'conspiracist', 'conspiracy_theorist', 'theorist'}):
+def get_time_sims(embed_dict, word1, min_sim=0.3, n_neighbors=15,
+                  blacklisted_words={'conspiracy', 'theory', 'conspiracist', 'conspiracy_theorist', 'theorist'}):
     start = time.time()
     time_sims = OrderedDict()
     lookups = {}
@@ -49,12 +50,12 @@ def get_time_sims(embed_dict, word1, min_sim=0.3, n_neighbors=15, blacklisted_wo
         if word1 not in embed.wv.key_to_index:
             print(f"{word1} not in {year}")
             continue
-        cnt=0
-        for (word, sim) in [(word1, 1.)]+embed.wv.similar_by_word(word1, topn=n_neighbors+len(blacklisted_words)):
+        cnt = 0
+        for (word, sim) in [(word1, 1.)] + embed.wv.similar_by_word(word1, topn=n_neighbors + len(blacklisted_words)):
             if word in blacklisted_words:
                 continue
-            cnt+=1
-            if cnt>n_neighbors:break
+            cnt += 1
+            if cnt > n_neighbors: break
             ww = "%s|%s" % (word, year)
             nearest.append((sim, ww))
             if sim > min_sim:
@@ -66,10 +67,14 @@ def get_time_sims(embed_dict, word1, min_sim=0.3, n_neighbors=15, blacklisted_wo
     return time_sims, lookups, nearests, sims
 
 
-def plot_historical_neighbors(word1, min_sim=.3, n_neighbors=15, embedding_dir='../../data/interim/aligned_embeddings/sample_and_labeling',
-                              figure_dir='../../reports/figures',  blacklisted_words={'conspiracy', 'theory', 'conspiracist', 'conspiracy_theorist', 'theorist'}):
+def plot_historical_neighbors(word1, min_sim=.3, n_neighbors=15,
+                              embedding_dir='../../data/interim/aligned_embeddings/sample_and_labeling',
+                              figure_dir='../../reports/figures',
+                              blacklisted_words={'conspiracy', 'theory', 'conspiracist', 'conspiracy_theorist',
+                                                 'theorist'}):
     embeddings = load_embeddings(embedding_dir)
-    time_sims, lookups, nearests, sims = get_time_sims(embeddings, word1, min_sim, n_neighbors, blacklisted_words=blacklisted_words)
+    time_sims, lookups, nearests, sims = get_time_sims(embeddings, word1, min_sim, n_neighbors,
+                                                       blacklisted_words=blacklisted_words)
     dirname = os.path.split(embedding_dir)[-1]
 
     words = lookups.keys()
@@ -136,10 +141,9 @@ def plot_annotations(annotations):
         prev = ann
 
 
-def savefig(name, directory = '../../reports/figures'):
+def savefig(name, directory='../../reports/figures'):
     fname = os.path.join(directory, name)
     plt.savefig(fname, bbox_inches=0)
-
 
 
 if __name__ == '__main__':
