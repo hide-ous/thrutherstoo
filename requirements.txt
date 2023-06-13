@@ -26,3 +26,4 @@ scikit-learn~=1.2.2
 matplotlib~=3.7.1
 ratelimit~=2.2.1
 google-api-python-client~=2.88.0
+networkx~=3.1

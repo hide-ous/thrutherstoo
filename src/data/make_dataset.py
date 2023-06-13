@@ -15,6 +15,7 @@ import pandas as pd
 from dotenv import find_dotenv, load_dotenv
 import zstandard as zstd
 import io
+import networkx as nx
 
 from zstandard import ZstdError
 
@@ -429,17 +430,63 @@ def extract_thread_structure(labeling_fpath, discussions_fpath, out_fpath):
     # all in memory and then dump to file? separate discussion?
     with open(out_fpath, 'w+') as f:
         for item in discussions.items():
-            f.write(json.dumps(item, sort_keys=True)+'\n')
+            f.write(json.dumps(item, sort_keys=True) + '\n')
 
+
+def filter_threads(in_fpath, time_delta, index_delta, min_thread_size, out_folder):
     # second pass
-    # create metadata:
-    # thread_size (short threads wouldn't help much),
-    # is_first_labeling (if multiple labeling instances, may want to only keep the first),
-    # labeling_size,
-    # index_from_first_labeling
-    # timedelta_from_first_labeling
-    # filter: on size, on +-index_from_first_labeling, +-timedelta_from_first_labeling, same but only in induced subgraph
-    pass
+    with open(in_fpath) as f, open(os.path.join(out_folder, 'discussions_by_size.jsonl'), 'w+') as outf_size, \
+            open(os.path.join(out_folder, 'discussions_by_index_delta.jsonl'), 'w+') as outf_index_delta, \
+            open(os.path.join(out_folder, 'discussions_by_time_delta.jsonl'), 'w+') as outf_time_delta, \
+            open(os.path.join(out_folder, 'discussions_by_index_delta_subthread.jsonl'),
+                 'w+') as outf_index_delta_subthread, \
+            open(os.path.join(out_folder, 'discussions_by_time_delta_subthread.jsonl'),
+                 'w+') as outf_time_delta_subthread:
+
+        for link_fullname, thread in map(json.loads, f):
+            thread = sorted(thread, key=lambda x: x['created_utc'], )
+            # create metadata:
+            # - thread_size (short threads wouldn't help much),
+            thread_size = len(thread)
+            outf_size.write(json.dumps({link_fullname: thread}, sort_keys=True) + '\n')
+
+            labeling_contribution_indices, labeling_contributions = zip(*filter_threads(lambda x: x[1]['is_labeling'],
+                                                                                        enumerate(thread)))
+            # - labeling_size,
+            labeling_size = len(labeling_contribution_indices)
+            # - index
+            # - is_first_labeling (if multiple labeling instances, may want to only keep the first),
+            for i in range(thread_size):
+                thread[i]['index'] = i
+                thread[i]['is_first_labeling'] = i == labeling_contribution_indices[0]
+
+            for labeling_index in labeling_contribution_indices:
+                # get sub-thread by combining ancestors and descendants from labeling instance
+                G = nx.DiGraph()
+                G.add_edges_from(
+                    (contribution['fullname'], contribution['parent_fullname']) for contribution in thread if
+                    contribution['parent_fullname'])
+                ancestors = list(nx.ancestors(labeling_contributions[labeling_index]['fullname']))
+                descendants = list(nx.descendants(labeling_contributions[labeling_index]['fullname']))
+                subthread = sorted(ancestors + [labeling_contributions[labeling_index]] + descendants,
+                                   key=lambda x: x['created_utc'])
+
+                # filter: on size, on +-index_from_labeling, +-timedelta_from_labeling
+                by_index_slice = [contribution for contribution in thread if abs(
+                    contribution['index'] - labeling_contributions[labeling_index]['index']) < index_delta]
+                by_time_slice = [contribution for contribution in thread if abs(
+                    contribution['created_utc'] - labeling_contributions[labeling_index]['created_utc']) < time_delta]
+                # filter: same but only in induced subgraph
+                by_index_subthread_slice = [contribution for contribution in subthread if abs(
+                    contribution['index'] - labeling_contributions[labeling_index]['index']) < index_delta]
+                by_time_subthread_slice = [contribution for contribution in subthread if abs(
+                    contribution['created_utc'] - labeling_contributions[labeling_index]['created_utc']) < time_delta]
+
+                # persist
+                outf_index_delta.write(json.dumps({link_fullname: by_index_slice}, sort_keys=True) + '\n')
+                outf_time_delta.write(json.dumps({link_fullname: by_time_slice}, sort_keys=True) + '\n')
+                outf_index_delta_subthread.write(json.dumps({link_fullname: by_index_subthread_slice}, sort_keys=True) + '\n')
+                outf_time_delta_subthread.write(json.dumps({link_fullname: by_time_subthread_slice}, sort_keys=True) + '\n')
 
 
 if __name__ == '__main__':
@@ -517,6 +564,7 @@ if __name__ == '__main__':
     #                    subreddit_subsets={'default': DEFAULT_SUBREDDITS})
     # subsample_further(interim_dir)
 
-    extract_thread_structure(labeling_fpath=os.path.join(interim_dir, 'labeling_contributions_preprocessed_no_bot.jsonl'),
-                             discussions_fpath=os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"),
-                             out_fpath=os.path.join(interim_dir, 'thread_structres.jsonl'))
+    extract_thread_structure(
+        labeling_fpath=os.path.join(interim_dir, 'labeling_contributions_preprocessed_no_bot.jsonl'),
+        discussions_fpath=os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"),
+        out_fpath=os.path.join(interim_dir, 'thread_structres.jsonl'))
