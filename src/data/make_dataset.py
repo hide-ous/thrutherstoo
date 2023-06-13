@@ -398,6 +398,48 @@ def subsample_further(in_dir, n_per_mo=10000):
                     outf.write(json.dumps(contribution, sort_keys=True) + '\n')
 
 
+def fullname2int(fullname):
+    return int(fullname.split('_')[-1], 36)
+
+
+def extract_thread_structure(labeling_fpath, discussions_fpath, out_fpath):
+    # read all labeling instances
+    # keep just fullnames
+    with open(labeling_fpath, encoding='utf8') as f:
+        labeling_fullnames = set(map(fullname2int, map(lambda x: json.loads(x)['fullname'], f)))
+
+    # first pass
+    keys_of_interest = {"fullname", "link_fullname", "parent_fullname", "created_utc", "subreddit"}
+    # stream discussions
+    discussions = defaultdict(list)
+    with open(discussions_fpath, encoding='utf8') as f:
+        for contribution in map(lambda x: json.loads(x)['fullname'], f):
+            # keep metadata: fullname, link_fullname, parent_fullname, created_utc, subreddit
+            contribution = {k: v for k, v in contribution.items() if k in keys_of_interest}
+            # string to int for fullnames
+            for k in contribution.keys():
+                if 'fullname' in k:
+                    contribution[k] = fullname2int(contribution[k])
+            # create metadata: is_labeling
+            contribution['is_labeling'] = contribution['fullname'] in labeling_fullnames
+            discussion = contribution.pop('link_fullname')
+            discussions[discussion].append(contribution)
+    # all in memory and then dump to file? separate discussion?
+    with open(out_fpath, 'w+') as f:
+        for item in discussions.items():
+            f.write(json.dumps(item, sort_keys=True)+'\n')
+
+    # second pass
+    # create metadata:
+    # thread_size (short threads wouldn't help much),
+    # is_first_labeling (if multiple labeling instances, may want to only keep the first),
+    # labeling_size,
+    # index_from_first_labeling
+    # timedelta_from_first_labeling
+    # filter: on size, on +-index_from_first_labeling, +-timedelta_from_first_labeling, same but only in induced subgraph
+    pass
+
+
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
@@ -469,6 +511,10 @@ if __name__ == '__main__':
 
     # divide_discussions(os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"))
 
-    divide_discussions(os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"),
-                       subreddit_subsets={'default': DEFAULT_SUBREDDITS})
+    # divide_discussions(os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"),
+    #                    subreddit_subsets={'default': DEFAULT_SUBREDDITS})
     # subsample_further(interim_dir)
+
+    extract_thread_structure(labeling_fpath=os.path.join(interim_dir, 'labeling_contributions_preprocessed_no_bot.jsonl'),
+                             discussions_fpath=os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"),
+                             out_fpath=os.path.join(interim_dir, 'thread_structres.jsonl'))
