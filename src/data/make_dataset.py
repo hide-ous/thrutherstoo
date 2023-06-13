@@ -505,7 +505,7 @@ def compute_baseline_volume_(in_fpath, out_folder='counts'):
     cntr_default = Counter()
 
     in_fname = os.path.basename(in_fpath)
-    out_fpath = os.path.join(out_folder, in_fname.replace('.zst', '_counts.json'))
+    out_fpath = os.path.join(out_folder, in_fname.replace('.zst', '_all_counts.json'))
     out_ct_fpath = os.path.join(out_folder, in_fname.replace('.zst', '_ct_counts.json'))
     out_default_fpath = os.path.join(out_folder, in_fname.replace('.zst', '_default_counts.json'))
     os.makedirs(os.path.dirname(out_fpath), exist_ok=True)
