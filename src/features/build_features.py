@@ -302,6 +302,7 @@ def build_embeddings():
     # train embeddings
     os.makedirs(os.path.join(interim_dir, 'embeddings'), exist_ok=True)
     for dirname in os.listdir(os.path.join(interim_dir, 'text_years')):
+        if dirname=='discussions': continue # TODO: remove
         for fname in os.listdir(
                 os.path.join(interim_dir, 'text_years', dirname)):
 
@@ -372,8 +373,8 @@ def separate_contributions_by_year():
         ("default_sample", default_sample_fpath),
         # ("discussions", discussion_fpath),
         ("discussions_ct", discussion_ct_fpath),
-        ("discussions_default", discussion_default_fpath)
-
+        ("discussions_default", discussion_default_fpath),
+        ("discussions", discussion_fpath),
     ]:
         out_fhandles = dict()
         with open(input_fpath, encoding='utf8') as f:
@@ -529,11 +530,16 @@ def enhance_with_perspective(max_retries=3,
                 desc=f'processing {os.path.split(input_fpath)[-1]}') as pbar:
             pool = Pool(5)
             for perspective in pool.imap(partial(perspective_,
-                                                 languages=languages, max_retries=max_retries,
-                                                 requested_attributes=requested_attributes, service=service
-                                                 ), chunkize_iter(map(json.loads, f), 3000)):
+                                                 languages=languages,
+                                                 max_retries=max_retries,
+                                                 requested_attributes=requested_attributes,
+                                                 service=service
+                                                 ),
+                                         chunkize_iter(map(json.loads, f),
+                                                       3000)):
                 for fullname, score in perspective.items():
-                    outf.write(json.dumps({fullname: score}, sort_keys=True) + '\n')
+                    outf.write(
+                        json.dumps({fullname: score}, sort_keys=True) + '\n')
                     pbar.update(1)
 
 
@@ -614,8 +620,10 @@ def enhance_with_liwc(n_threads=40):
             for liwcs in tqdm(pool.imap_unordered(
                     partial(df_liwcifer, text_col='preprocessed_text',
                             matcher=matcher),
-                    map(lambda chunk: chunk.drop_duplicates(subset=['fullname']).set_index('fullname')[
-                        ['preprocessed_text']],
+                    map(lambda chunk:
+                        chunk.drop_duplicates(subset=['fullname']).set_index(
+                            'fullname')[
+                            ['preprocessed_text']],
                         pd.read_json(input_fpath, lines=True, chunksize=10000,
                                      encoding='utf8'))),
                     desc=f'processing {output_fpath}'):
