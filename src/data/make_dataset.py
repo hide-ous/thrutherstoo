@@ -515,7 +515,7 @@ def compute_baseline_volume_(in_fpath, out_folder='counts'):
         timestamp = contribution.get('created_utc', None)
         if timestamp:
             timestamp = datetime.datetime.fromtimestamp(float(timestamp))
-            truncated_timestamp = time.mktime(timestamp.timetuple())
+            truncated_timestamp = time.mktime(timestamp.date().timetuple())
             cntr[truncated_timestamp] += 1
             if contribution.get('subreddit', None) in CONSPIRACY_SUBREDDITS:
                 cntr_ct[truncated_timestamp] += 1
