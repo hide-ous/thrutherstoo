@@ -399,6 +399,8 @@ def subsample_further(in_dir, n_per_mo=10000):
 
 
 def fullname2int(fullname):
+    if fullname is None:
+        return fullname
     return int(fullname.split('_')[-1], 36)
 
 
