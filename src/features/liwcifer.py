@@ -155,7 +155,7 @@ def match_sent(sent: str, matchers):
 
 
 def bag_of_lexicons(sent: str, matcher):
-    return pd.Series({k: len(v) for k, v in match_sent(sent, matcher).items()}, dtype=np.int)
+    return pd.Series({k: len(v) for k, v in match_sent(sent, matcher).items()}, dtype=np.int32)
 
 
 def df_liwcifer(df: pd.DataFrame, text_col, matcher):

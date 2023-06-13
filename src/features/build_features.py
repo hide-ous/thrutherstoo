@@ -349,7 +349,7 @@ def separate_contributions_by_year():
 
     labeling_fpath = os.path.join(interim_dir,
                                   'labeling_contributions_preprocessed_no_bot.jsonl')
-    k = 100000
+    k = 10000
     sample_fpath = os.path.join(interim_dir,
                                 f'sample_contributions_{k}_preprocessed.jsonl')
     ct_sample_fpath = os.path.join(project_dir, 'data', 'interim',
@@ -360,16 +360,16 @@ def separate_contributions_by_year():
                                     'labeling_discussions_all_filtered_preprocessed_no_bot.jsonl')
 
     discussion_ct_fpath = os.path.join(interim_dir,
-                                    'labeling_discussions_all_filtered_preprocessed_ct_no_bot.jsonl')
+                                       'labeling_discussions_all_filtered_preprocessed_ct_no_bot.jsonl')
     discussion_default_fpath = os.path.join(interim_dir,
-                                    'labeling_discussions_all_filtered_preprocessed_default_no_bot.jsonl')
+                                            'labeling_discussions_all_filtered_preprocessed_default_no_bot.jsonl')
 
     os.makedirs(os.path.join(interim_dir, 'text_years'), exist_ok=True)
     for folder_name, input_fpath in [
         ("labeling", labeling_fpath),
-        #                              ("sample", sample_fpath),
-        #                              ("ct_sample", ct_sample_fpath),
-        #                              ("default_sample", default_sample_fpath),
+        ("sample", sample_fpath),
+        ("ct_sample", ct_sample_fpath),
+        ("default_sample", default_sample_fpath),
         # ("discussions", discussion_fpath),
         ("discussions_ct", discussion_ct_fpath),
         ("discussions_default", discussion_default_fpath)
@@ -501,9 +501,9 @@ def enhance_with_perspective(max_retries=3,
     discussion_fpath = os.path.join(interim_dir,
                                     'labeling_discussions_all_filtered_preprocessed_no_bot.jsonl')
     discussion_ct_fpath = os.path.join(interim_dir,
-                                    'labeling_discussions_all_filtered_preprocessed_ct_no_bot.jsonl')
+                                       'labeling_discussions_all_filtered_preprocessed_ct_no_bot.jsonl')
     discussion_default_fpath = os.path.join(interim_dir,
-                                    'labeling_discussions_all_filtered_preprocessed_default_no_bot.jsonl')
+                                            'labeling_discussions_all_filtered_preprocessed_default_no_bot.jsonl')
     out_dir = os.path.join(interim_dir, 'perspective')
     os.makedirs(out_dir, exist_ok=True)
 
@@ -525,7 +525,8 @@ def enhance_with_perspective(max_retries=3,
         discussion_default_fpath
     ]:
         output_fpath = os.path.join(out_dir, os.path.split(input_fpath)[-1].replace('.jsonl', '_perspective.jsonl'))
-        with open(input_fpath, encoding='utf8') as f, open(output_fpath, 'w+', encoding='utf8') as outf, tqdm(desc = f'processing {os.path.split(input_fpath)[-1]}') as pbar:
+        with open(input_fpath, encoding='utf8') as f, open(output_fpath, 'w+', encoding='utf8') as outf, tqdm(
+                desc=f'processing {os.path.split(input_fpath)[-1]}') as pbar:
             pool = Pool(5)
             for perspective in pool.imap(partial(perspective_,
                                                  languages=languages, max_retries=max_retries,
@@ -537,7 +538,7 @@ def enhance_with_perspective(max_retries=3,
 
 
 def perspective_(contributions, languages, max_retries,
-                requested_attributes, service):
+                 requested_attributes, service):
     logger = logging.getLogger()
     perspective = dict()
     for contribution in contributions:
@@ -584,9 +585,9 @@ def enhance_with_liwc(n_threads=40):
     discussion_fpath = os.path.join(interim_dir,
                                     'labeling_discussions_all_filtered_preprocessed_no_bot.jsonl')
     discussion_ct_fpath = os.path.join(interim_dir,
-                                    'labeling_discussions_all_filtered_preprocessed_ct_no_bot.jsonl')
+                                       'labeling_discussions_all_filtered_preprocessed_ct_no_bot.jsonl')
     discussion_default_fpath = os.path.join(interim_dir,
-                                    'labeling_discussions_all_filtered_preprocessed_default_no_bot.jsonl')
+                                            'labeling_discussions_all_filtered_preprocessed_default_no_bot.jsonl')
     out_dir = os.path.join(interim_dir, 'liwc')
     os.makedirs(out_dir, exist_ok=True)
 
@@ -596,13 +597,13 @@ def enhance_with_liwc(n_threads=40):
     matcher = get_matchers(lexica)
 
     for input_fpath in [
-        # labeling_fpath,
+        labeling_fpath,
         sample_fpath,
-        ct_sample_fpath,
-        default_sample_fpath,
+        # ct_sample_fpath,
+        # default_sample_fpath,
         # discussion_fpath,
-        discussion_ct_fpath,
-        discussion_default_fpath
+        # discussion_ct_fpath,
+        # discussion_default_fpath
     ]:
         output_fpath = os.path.join(out_dir,
                                     os.path.split(input_fpath)[-1].replace(
@@ -616,8 +617,8 @@ def enhance_with_liwc(n_threads=40):
                     map(lambda chunk: chunk.drop_duplicates(subset=['fullname']).set_index('fullname')[
                         ['preprocessed_text']],
                         pd.read_json(input_fpath, lines=True, chunksize=10000,
-                                     encoding='utf8'))) ,
-            desc=f'processing {output_fpath}'):
+                                     encoding='utf8'))),
+                    desc=f'processing {output_fpath}'):
                 for k, v in liwcs.to_dict(orient='index').items():
                     outf.write(json.dumps({k: v}) + '\n')
 
@@ -642,5 +643,5 @@ if __name__ == '__main__':
     # merge_samples_with_labeling_contributions()
     # build_embeddings()
     # align_embeddings()
-    enhance_with_perspective()
-    # enhance_with_liwc()
+    # enhance_with_perspective()
+    enhance_with_liwc()
