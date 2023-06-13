@@ -504,11 +504,10 @@ def compute_baseline_volume_(in_fpath, out_folder='counts'):
     cntr_ct = Counter()
     cntr_default = Counter()
 
-    in_folder = os.path.dirname(in_fpath)
     in_fname = os.path.basename(in_fpath)
-    out_fpath = os.path.join(in_folder, out_folder, in_fname.replace('.zst', '_counts.json'))
-    out_ct_fpath = os.path.join(in_folder, out_folder, in_fname.replace('.zst', '_ct_counts.json'))
-    out_default_fpath = os.path.join(in_folder, out_folder, in_fname.replace('.zst', '_default_counts.json'))
+    out_fpath = os.path.join(out_folder, in_fname.replace('.zst', '_counts.json'))
+    out_ct_fpath = os.path.join(out_folder, in_fname.replace('.zst', '_ct_counts.json'))
+    out_default_fpath = os.path.join(out_folder, in_fname.replace('.zst', '_default_counts.json'))
     os.makedirs(os.path.dirname(out_fpath), exist_ok=True)
 
     logger.info(f'processing {in_fname}')
@@ -531,7 +530,7 @@ def compute_baseline_volume_(in_fpath, out_folder='counts'):
         f.write(json.dumps(cntr_default, sort_keys=True))
 
 
-def compute_baseline_volume(out_folder='counts'):
+def compute_baseline_volume(out_folder):
     fpaths = get_contribution_fpaths()
     with Pool(40) as pool:
         pool.map(partial(compute_baseline_volume_, out_folder=out_folder), fpaths)
@@ -622,4 +621,5 @@ if __name__ == '__main__':
     #                min_thread_size=50,
     #                out_folder=os.path.join(interim_dir, 'labeling_discussion_subset'),
     #                )
-    compute_baseline_volume()
+    out_folder = os.path.join(interim_dir, 'counts')
+    compute_baseline_volume(out_folder=out_folder)
