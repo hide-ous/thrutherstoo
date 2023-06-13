@@ -413,7 +413,7 @@ def extract_thread_structure(labeling_fpath, discussions_fpath, out_fpath):
     # stream discussions
     discussions = defaultdict(list)
     with open(discussions_fpath, encoding='utf8') as f:
-        for contribution in map(lambda x: json.loads(x)['fullname'], f):
+        for contribution in map(lambda x: json.loads(x), f):
             # keep metadata: fullname, link_fullname, parent_fullname, created_utc, subreddit
             contribution = {k: v for k, v in contribution.items() if k in keys_of_interest}
             # string to int for fullnames
