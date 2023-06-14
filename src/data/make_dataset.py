@@ -475,8 +475,8 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
                 if labeling_fullname is None:
                     logger.error('no fullname for '+json.dumps(thread[labeling_index]))
                     continue
-                ancestors = list(nx.ancestors(labeling_fullname))
-                descendants = list(nx.descendants(labeling_fullname))
+                ancestors = list(nx.ancestors(G, labeling_fullname))
+                descendants = list(nx.descendants(G, labeling_fullname))
                 subthread = sorted(ancestors + [thread[labeling_index]] + descendants,
                                    key=lambda x: x['created_utc'])
 
