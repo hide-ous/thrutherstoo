@@ -436,6 +436,7 @@ def extract_thread_structure(labeling_fpath, discussions_fpath, out_fpath):
 
 
 def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_folder):
+    logger = logging.getLogger()
     # second pass
     os.makedirs(out_folder, exist_ok=True)
     with open(in_fpath) as f, open(os.path.join(out_folder, 'discussions_by_size.jsonl'), 'w+') as outf_size, \
@@ -470,8 +471,12 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
                 G.add_edges_from(
                     (contribution['fullname'], contribution['parent_fullname']) for contribution in thread if
                     contribution['parent_fullname'])
-                ancestors = list(nx.ancestors(thread[labeling_index]['fullname']))
-                descendants = list(nx.descendants(thread[labeling_index]['fullname']))
+                labeling_fullname = thread[labeling_index]['fullname']
+                if labeling_fullname is None:
+                    logger.error('no fullname for '+json.dumps(thread[labeling_index]))
+                    continue
+                ancestors = list(nx.ancestors(labeling_fullname))
+                descendants = list(nx.descendants(labeling_fullname))
                 subthread = sorted(ancestors + [thread[labeling_index]] + descendants,
                                    key=lambda x: x['created_utc'])
 
