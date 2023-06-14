@@ -470,22 +470,22 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
                 G.add_edges_from(
                     (contribution['fullname'], contribution['parent_fullname']) for contribution in thread if
                     contribution['parent_fullname'])
-                ancestors = list(nx.ancestors(labeling_contributions[labeling_index]['fullname']))
-                descendants = list(nx.descendants(labeling_contributions[labeling_index]['fullname']))
-                subthread = sorted(ancestors + [labeling_contributions[labeling_index]] + descendants,
+                ancestors = list(nx.ancestors(thread[labeling_index]['fullname']))
+                descendants = list(nx.descendants(thread[labeling_index]['fullname']))
+                subthread = sorted(ancestors + [thread[labeling_index]] + descendants,
                                    key=lambda x: x['created_utc'])
 
                 # filter: on size, on +-index_from_labeling, +-timedelta_from_labeling
                 by_index_slice = [contribution for contribution in thread if abs(
-                    contribution['index'] - labeling_contributions[labeling_index]['index']) < index_delta]
+                    contribution['index'] - thread[labeling_index]['index']) < index_delta]
                 by_time_slice = [contribution for contribution in thread if abs(
-                    contribution['created_utc'] - labeling_contributions[labeling_index][
+                    contribution['created_utc'] - thread[labeling_index][
                         'created_utc']) < seconds_delta]
                 # filter: same but only in induced subgraph
                 by_index_subthread_slice = [contribution for contribution in subthread if abs(
-                    contribution['index'] - labeling_contributions[labeling_index]['index']) < index_delta]
+                    contribution['index'] - thread[labeling_index]['index']) < index_delta]
                 by_time_subthread_slice = [contribution for contribution in subthread if abs(
-                    contribution['created_utc'] - labeling_contributions[labeling_index][
+                    contribution['created_utc'] - thread[labeling_index][
                         'created_utc']) < seconds_delta]
 
                 # persist
