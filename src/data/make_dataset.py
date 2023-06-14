@@ -445,7 +445,9 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
             open(os.path.join(out_folder, 'discussions_by_index_delta_subthread.jsonl'),
                  'w+') as outf_index_delta_subthread, \
             open(os.path.join(out_folder, 'discussions_by_time_delta_subthread.jsonl'),
-                 'w+') as outf_time_delta_subthread:
+                 'w+') as outf_time_delta_subthread, \
+            open(os.path.join(out_folder, 'discussions_by_subthread.jsonl'),
+                 'w+') as outf_subthread:
 
         for link_fullname, thread in map(json.loads, f):
             for contribution in thread:
@@ -517,6 +519,7 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
                     json.dumps({link_fullname: by_index_subthread_slice}, sort_keys=True) + '\n')
                 outf_time_delta_subthread.write(
                     json.dumps({link_fullname: by_time_subthread_slice}, sort_keys=True) + '\n')
+                outf_subthread.write(json.dumps({link_fullname: subthread}, sort_keys=True) + '\n')
 
 
 def compute_baseline_volume_(in_fpath, out_folder='counts'):
@@ -660,12 +663,13 @@ if __name__ == '__main__':
     #     labeling_fpath=os.path.join(interim_dir, 'labeling_contributions_preprocessed_no_bot.jsonl'),
     #     discussions_fpath=os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"),
     #     out_fpath=os.path.join(interim_dir, 'thread_structres.jsonl'))
-    # filter_threads(in_fpath=os.path.join(interim_dir, 'thread_structres.jsonl'),
-    #                seconds_delta=60 * 60,  # 1h
-    #                index_delta=25,
-    #                min_thread_size=50,
-    #                out_folder=os.path.join(interim_dir, 'labeling_discussion_subset'),
-    #                )
-    out_folder = os.path.join(interim_dir, 'counts')
+    filter_threads(in_fpath=os.path.join(interim_dir, 'thread_structres.jsonl'),
+                   seconds_delta=60 * 60,  # 1h
+                   index_delta=25,
+                   min_thread_size=50,
+                   out_folder=os.path.join(interim_dir, 'labeling_discussion_subset'),
+                   )
+
+    # out_folder = os.path.join(interim_dir, 'counts')
     # compute_baseline_volume(out_folder=out_folder)
-    consolidate_baseline_volume(in_folder=out_folder)
+    # consolidate_baseline_volume(in_folder=out_folder)
