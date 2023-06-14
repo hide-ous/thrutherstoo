@@ -480,7 +480,7 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
                 connected_contribution_fullnames = set(ancestors)
                 connected_contribution_fullnames.update(descendants)
                 connected_contributions = [i for i in thread if i['fullname'] in connected_contribution_fullnames]
-                subthread = sorted([thread[labeling_index]],
+                subthread = sorted([thread[labeling_index]]+connected_contributions,
                                    key=lambda x: x['created_utc'])
 
                 # filter: on size, on +-index_from_labeling, +-timedelta_from_labeling
