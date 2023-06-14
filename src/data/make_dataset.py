@@ -454,7 +454,7 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
             if thread_size >= min_thread_size:
                 outf_size.write(json.dumps({link_fullname: thread}, sort_keys=True) + '\n')
 
-            labeling_contribution_indices, labeling_contributions = zip(*filter_threads(lambda x: x[1]['is_labeling'],
+            labeling_contribution_indices, labeling_contributions = zip(*filter(lambda x: x[1]['is_labeling'],
                                                                                         enumerate(thread)))
             # # - labeling_size,
             # labeling_size = len(labeling_contribution_indices)
