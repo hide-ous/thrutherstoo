@@ -489,6 +489,11 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
                 connected_contributions = [i for i in thread if i['fullname'] in connected_contribution_fullnames]
                 subthread = sorted([thread[labeling_index]]+connected_contributions,
                                    key=lambda x: x['created_utc'])
+                labeling_index_subthread= None
+                for i, contribution in enumerate(subthread):
+                    if contribution['fullname'] == labeling_fullname:
+                        labeling_index_subthread=i
+                        break
 
                 # filter: on size, on +-index_from_labeling, +-timedelta_from_labeling
                 by_index_slice = [contribution for contribution in thread if abs(
@@ -497,8 +502,8 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
                     contribution['created_utc'] - thread[labeling_index][
                         'created_utc']) < seconds_delta]
                 # filter: same but only in induced subgraph
-                by_index_subthread_slice = [contribution for contribution in subthread if abs(
-                    contribution['index'] - thread[labeling_index]['index']) < index_delta]
+                by_index_subthread_slice = [contribution for contribution_index_subthread, contribution in enumerate(subthread) if abs(
+                    contribution_index_subthread - labeling_index_subthread) < index_delta]
                 by_time_subthread_slice = [contribution for contribution in subthread if abs(
                     contribution['created_utc'] - thread[labeling_index][
                         'created_utc']) < seconds_delta]
