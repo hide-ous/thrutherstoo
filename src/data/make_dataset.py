@@ -615,11 +615,11 @@ if __name__ == '__main__':
     #     labeling_fpath=os.path.join(interim_dir, 'labeling_contributions_preprocessed_no_bot.jsonl'),
     #     discussions_fpath=os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"),
     #     out_fpath=os.path.join(interim_dir, 'thread_structres.jsonl'))
-    # filter_threads(in_fpath=os.path.join(interim_dir, 'thread_structres.jsonl'),
-    #                seconds_delta=60 * 60,  # 1h
-    #                index_delta=25,
-    #                min_thread_size=50,
-    #                out_folder=os.path.join(interim_dir, 'labeling_discussion_subset'),
-    #                )
-    out_folder = os.path.join(interim_dir, 'counts')
-    compute_baseline_volume(out_folder=out_folder)
+    filter_threads(in_fpath=os.path.join(interim_dir, 'thread_structres.jsonl'),
+                   seconds_delta=60 * 60,  # 1h
+                   index_delta=25,
+                   min_thread_size=50,
+                   out_folder=os.path.join(interim_dir, 'labeling_discussion_subset'),
+                   )
+    # out_folder = os.path.join(interim_dir, 'counts')
+    # compute_baseline_volume(out_folder=out_folder)
