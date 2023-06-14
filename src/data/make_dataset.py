@@ -456,8 +456,6 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
             # create metadata:
             # - thread_size (short threads wouldn't help much),
             thread_size = len(thread)
-            if thread_size >= min_thread_size:
-                outf_size.write(json.dumps({link_fullname: thread}, sort_keys=True) + '\n')
 
             labeling_contribution_indices, labeling_contributions = zip(*filter(lambda x: x[1]['is_labeling'],
                                                                                 enumerate(thread)))
@@ -520,6 +518,8 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
                 outf_time_delta_subthread.write(
                     json.dumps({link_fullname: by_time_subthread_slice}, sort_keys=True) + '\n')
                 outf_subthread.write(json.dumps({link_fullname: subthread}, sort_keys=True) + '\n')
+                if thread_size >= min_thread_size:
+                    outf_size.write(json.dumps({link_fullname: thread}, sort_keys=True) + '\n')
 
 
 def compute_baseline_volume_(in_fpath, out_folder='counts'):
@@ -563,25 +563,25 @@ def compute_baseline_volume(out_folder):
 
 def consolidate_baseline_volume(in_folder):
     all_counts = Counter()
-    submission_counts = Counter()
-    comment_counts = Counter()
+    ct_counts = Counter()
+    default_counts = Counter()
     for fname in filter(lambda x: x.startswith('RC') or x.startswith('RS'),
                         os.listdir(in_folder)):
         fpath = os.path.join(in_folder, fname)
         with open(fpath) as f:
             cnts = json.load(f)
-            if fname.startswith("RC"):
-                comment_counts += cnts
-            else:
-                submission_counts += cnts
-            all_counts += cnts
-
+            if 'ct' in fname:
+                ct_counts += cnts
+            elif 'default' in fname:
+                default_counts += cnts
+            elif 'all' in fname:
+                all_counts += cnts
     with open(os.path.join(in_folder, 'all_counts.json'), 'w+') as f:
         json.dump(all_counts, f)
-    with open(os.path.join(in_folder, 'submission_counts.json'), 'w+') as f:
-        json.dump(submission_counts, f)
-    with open(os.path.join(in_folder, 'comment_counts.json'), 'w+') as f:
-        json.dump(comment_counts, f)
+    with open(os.path.join(in_folder, 'ct_counts.json'), 'w+') as f:
+        json.dump(ct_counts, f)
+    with open(os.path.join(in_folder, 'default_counts.json'), 'w+') as f:
+        json.dump(default_counts, f)
 
 
 if __name__ == '__main__':
@@ -663,13 +663,13 @@ if __name__ == '__main__':
     #     labeling_fpath=os.path.join(interim_dir, 'labeling_contributions_preprocessed_no_bot.jsonl'),
     #     discussions_fpath=os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"),
     #     out_fpath=os.path.join(interim_dir, 'thread_structres.jsonl'))
-    filter_threads(in_fpath=os.path.join(interim_dir, 'thread_structres.jsonl'),
-                   seconds_delta=60 * 60,  # 1h
-                   index_delta=25,
-                   min_thread_size=50,
-                   out_folder=os.path.join(interim_dir, 'labeling_discussion_subset'),
-                   )
+    # filter_threads(in_fpath=os.path.join(interim_dir, 'thread_structres.jsonl'),
+    #                seconds_delta=60 * 60,  # 1h
+    #                index_delta=25,
+    #                min_thread_size=50,
+    #                out_folder=os.path.join(interim_dir, 'labeling_discussion_subset'),
+    #                )
 
-    # out_folder = os.path.join(interim_dir, 'counts')
+    out_folder = os.path.join(interim_dir, 'counts')
     # compute_baseline_volume(out_folder=out_folder)
-    # consolidate_baseline_volume(in_folder=out_folder)
+    consolidate_baseline_volume(in_folder=out_folder)
