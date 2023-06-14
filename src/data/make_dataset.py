@@ -478,7 +478,7 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
                 if labeling_fullname is None:
                     logger.error('no fullname for '+json.dumps(thread[labeling_index]))
                     continue
-                if G.has_node(labeling_fullname):
+                if not G.has_node(labeling_fullname):
                     logger.error(f'G {G.number_of_nodes()} {G.number_of_edges()} disconnected: '+json.dumps(thread[labeling_index]))
                     logger.error(G.nodes)
                     raise ValueError
