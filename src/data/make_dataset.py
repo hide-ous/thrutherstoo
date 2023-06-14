@@ -448,6 +448,8 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
                  'w+') as outf_time_delta_subthread:
 
         for link_fullname, thread in map(json.loads, f):
+            for contribution in thread:
+                contribution['created_utc'] = float(contribution['created_utc'])
             thread = sorted(thread, key=lambda x: x['created_utc'], )
             # create metadata:
             # - thread_size (short threads wouldn't help much),
