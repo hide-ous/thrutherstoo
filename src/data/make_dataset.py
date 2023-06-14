@@ -470,6 +470,7 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
             for labeling_index in labeling_contribution_indices:
                 # get sub-thread by combining ancestors and descendants from labeling instance
                 G = nx.DiGraph()
+                G.add_nodes_from(contribution['fullname'] for contribution in thread)
                 G.add_edges_from(
                     (contribution['fullname'], contribution['parent_fullname']) for contribution in thread if
                     contribution['parent_fullname'])
@@ -478,7 +479,7 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
                     logger.error('no fullname for '+json.dumps(thread[labeling_index]))
                     continue
                 if G.has_node(labeling_fullname):
-                    logger.error('disconnected: '+json.dumps(thread[labeling_index]))
+                    logger.error(f'G {G.number_of_nodes()} {G.number_of_edges()} disconnected: '+json.dumps(thread[labeling_index]))
                 ancestors = list(nx.ancestors(G, labeling_fullname))
                 descendants = list(nx.descendants(G, labeling_fullname))
                 connected_contribution_fullnames = set(ancestors)
