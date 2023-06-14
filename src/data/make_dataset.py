@@ -525,6 +525,7 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
                     outf_size.write(json.dumps({link_fullname: thread}, sort_keys=True) + '\n')
 
 def consolidate_filtered_threads(discussions_fpath, filtered_ids_fpath ,out_fpath_all,out_fpath_default,out_fpath_ct):
+    logger = logging.getLogger()
     with open(discussions_fpath, encoding='utf8') as inf, \
             open(filtered_ids_fpath) as filterf, \
             open(out_fpath_all, 'w+', encoding='utf8') as outf_all,\
@@ -540,9 +541,12 @@ def consolidate_filtered_threads(discussions_fpath, filtered_ids_fpath ,out_fpat
             if fullname2int(contribution['fullname']) in filter_contribution_fullnames:
                 out_line = json.dumps(contribution, sort_keys=True)+'\n'
                 outf_all.write(out_line)
-                if contribution['subreddit'] in CONSPIRACY_SUBREDDITS:
+                contribution_subreddit = contribution.get('subreddit', None)
+                if contribution_subreddit is None:
+                    logger.warning(f'no subreddit for {json.dumps(contribution)}')
+                if contribution_subreddit in CONSPIRACY_SUBREDDITS:
                     outf_ct.write(out_line)
-                elif contribution['subreddit'] in DEFAULT_SUBREDDITS:
+                elif contribution_subreddit in DEFAULT_SUBREDDITS:
                     outf_default.write(out_line)
 
 
