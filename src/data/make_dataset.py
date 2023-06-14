@@ -477,6 +477,8 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
                 if labeling_fullname is None:
                     logger.error('no fullname for '+json.dumps(thread[labeling_index]))
                     continue
+                if G.has_node(labeling_fullname):
+                    logger.error('disconnected: '+json.dumps(thread[labeling_index]))
                 ancestors = list(nx.ancestors(G, labeling_fullname))
                 descendants = list(nx.descendants(G, labeling_fullname))
                 connected_contribution_fullnames = set(ancestors)
