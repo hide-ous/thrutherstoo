@@ -360,9 +360,9 @@ def separate_contributions_by_year():
                                     'labeling_subthread_all_filtered_preprocessed_no_bot.jsonl')
 
     discussion_ct_fpath = os.path.join(interim_dir,
-                                       'labeling_subthread_all_filtered_preprocessed_ct_no_bot.jsonl')
+                                       'labeling_subthread_ct_filtered_preprocessed_no_bot.jsonl')
     discussion_default_fpath = os.path.join(interim_dir,
-                                            'labeling_subthread_all_filtered_preprocessed_default_no_bot.jsonl')
+                                            'labeling_subthread_default_filtered_preprocessed_no_bot.jsonl')
 
     os.makedirs(os.path.join(interim_dir, 'text_years'), exist_ok=True)
     for folder_name, input_fpath in [
@@ -500,9 +500,9 @@ def enhance_with_perspective(max_retries=3,
     discussion_fpath = os.path.join(interim_dir,
                                     'labeling_subthread_all_filtered_preprocessed_no_bot.jsonl')
     discussion_ct_fpath = os.path.join(interim_dir,
-                                       'labeling_subthread_all_filtered_preprocessed_ct_no_bot.jsonl')
+                                       'labeling_subthread_ct_filtered_preprocessed_no_bot.jsonl')
     discussion_default_fpath = os.path.join(interim_dir,
-                                            'labeling_subthread_all_filtered_preprocessed_default_no_bot.jsonl')
+                                            'labeling_subthread_default_filtered_preprocessed_no_bot.jsonl')
     out_dir = os.path.join(interim_dir, 'perspective')
     os.makedirs(out_dir, exist_ok=True)
 
@@ -589,9 +589,9 @@ def enhance_with_liwc(n_threads=40):
     discussion_fpath = os.path.join(interim_dir,
                                     'labeling_subthread_all_filtered_preprocessed_no_bot.jsonl')
     discussion_ct_fpath = os.path.join(interim_dir,
-                                       'labeling_subthread_all_filtered_preprocessed_ct_no_bot.jsonl')
+                                       'labeling_subthread_ct_filtered_preprocessed_no_bot.jsonl')
     discussion_default_fpath = os.path.join(interim_dir,
-                                            'labeling_subthread_all_filtered_preprocessed_default_no_bot.jsonl')
+                                            'labeling_subthread_default_filtered_preprocessed_no_bot.jsonl')
     out_dir = os.path.join(interim_dir, 'liwc')
     os.makedirs(out_dir, exist_ok=True)
 
