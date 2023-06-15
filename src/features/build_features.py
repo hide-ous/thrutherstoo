@@ -302,7 +302,6 @@ def build_embeddings():
     # train embeddings
     os.makedirs(os.path.join(interim_dir, 'embeddings'), exist_ok=True)
     for dirname in os.listdir(os.path.join(interim_dir, 'text_years')):
-        if dirname=='discussions': continue # TODO: remove
         for fname in os.listdir(
                 os.path.join(interim_dir, 'text_years', dirname)):
 
@@ -358,12 +357,12 @@ def separate_contributions_by_year():
     default_sample_fpath = os.path.join(project_dir, 'data', 'interim',
                                         f'sample_contributions_{k}_default_preprocessed.jsonl')
     discussion_fpath = os.path.join(interim_dir,
-                                    'labeling_discussions_all_filtered_preprocessed_no_bot.jsonl')
+                                    'labeling_subthread_all_filtered_preprocessed_no_bot.jsonl')
 
     discussion_ct_fpath = os.path.join(interim_dir,
-                                       'labeling_discussions_all_filtered_preprocessed_ct_no_bot.jsonl')
+                                       'labeling_subthread_all_filtered_preprocessed_ct_no_bot.jsonl')
     discussion_default_fpath = os.path.join(interim_dir,
-                                            'labeling_discussions_all_filtered_preprocessed_default_no_bot.jsonl')
+                                            'labeling_subthread_all_filtered_preprocessed_default_no_bot.jsonl')
 
     os.makedirs(os.path.join(interim_dir, 'text_years'), exist_ok=True)
     for folder_name, input_fpath in [
@@ -371,7 +370,6 @@ def separate_contributions_by_year():
         ("sample", sample_fpath),
         ("ct_sample", ct_sample_fpath),
         ("default_sample", default_sample_fpath),
-        # ("discussions", discussion_fpath),
         ("discussions_ct", discussion_ct_fpath),
         ("discussions_default", discussion_default_fpath),
         ("discussions", discussion_fpath),
@@ -500,11 +498,11 @@ def enhance_with_perspective(max_retries=3,
     default_sample_fpath = os.path.join(project_dir, 'data', 'interim',
                                         f'sample_contributions_{k}_default_preprocessed.jsonl')
     discussion_fpath = os.path.join(interim_dir,
-                                    'labeling_discussions_all_filtered_preprocessed_no_bot.jsonl')
+                                    'labeling_subthread_all_filtered_preprocessed_no_bot.jsonl')
     discussion_ct_fpath = os.path.join(interim_dir,
-                                       'labeling_discussions_all_filtered_preprocessed_ct_no_bot.jsonl')
+                                       'labeling_subthread_all_filtered_preprocessed_ct_no_bot.jsonl')
     discussion_default_fpath = os.path.join(interim_dir,
-                                            'labeling_discussions_all_filtered_preprocessed_default_no_bot.jsonl')
+                                            'labeling_subthread_all_filtered_preprocessed_default_no_bot.jsonl')
     out_dir = os.path.join(interim_dir, 'perspective')
     os.makedirs(out_dir, exist_ok=True)
 
@@ -517,11 +515,11 @@ def enhance_with_perspective(max_retries=3,
                               static_discovery=False, )
 
     for input_fpath in [
-        labeling_fpath,
-        sample_fpath,
-        ct_sample_fpath,
-        default_sample_fpath,
-        # discussion_fpath,
+        # labeling_fpath,
+        # sample_fpath,
+        # ct_sample_fpath,
+        # default_sample_fpath,
+        discussion_fpath,
         discussion_ct_fpath,
         discussion_default_fpath
     ]:
@@ -589,11 +587,11 @@ def enhance_with_liwc(n_threads=40):
     default_sample_fpath = os.path.join(project_dir, 'data', 'interim',
                                         f'sample_contributions_{k}_default_preprocessed.jsonl')
     discussion_fpath = os.path.join(interim_dir,
-                                    'labeling_discussions_all_filtered_preprocessed_no_bot.jsonl')
+                                    'labeling_subthread_all_filtered_preprocessed_no_bot.jsonl')
     discussion_ct_fpath = os.path.join(interim_dir,
-                                       'labeling_discussions_all_filtered_preprocessed_ct_no_bot.jsonl')
+                                       'labeling_subthread_all_filtered_preprocessed_ct_no_bot.jsonl')
     discussion_default_fpath = os.path.join(interim_dir,
-                                            'labeling_discussions_all_filtered_preprocessed_default_no_bot.jsonl')
+                                            'labeling_subthread_all_filtered_preprocessed_default_no_bot.jsonl')
     out_dir = os.path.join(interim_dir, 'liwc')
     os.makedirs(out_dir, exist_ok=True)
 
@@ -647,9 +645,10 @@ if __name__ == '__main__':
     # # should run the notebook to find bots notebooks/inspect_bot_authors
     # # then, should run the filter_bots function in make_dataset
     # # then, should run the divide_discussions and subsample_further
-    # separate_contributions_by_year()
-    # merge_samples_with_labeling_contributions()
-    # build_embeddings()
-    # align_embeddings()
-    # enhance_with_perspective()
+    # # then, should run extract_thread_structure, filter_threads, consolidate_filtered_threads
+    separate_contributions_by_year()
+    merge_samples_with_labeling_contributions()
+    build_embeddings()
+    align_embeddings()
+    enhance_with_perspective()
     enhance_with_liwc()

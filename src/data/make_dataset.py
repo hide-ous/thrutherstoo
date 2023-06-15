@@ -699,11 +699,11 @@ if __name__ == '__main__':
     #                out_folder=os.path.join(interim_dir, 'labeling_discussion_subset'),
     #                )
     ##mv threat_structres.jsonl thread_structures.jsonl
-    consolidate_filtered_threads(discussions_fpath=os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"),
-                                 filtered_ids_fpath=os.path.join(interim_dir, 'labeling_discussion_subset', 'discussions_by_subthread.jsonl'),
-                                 out_fpath_all=os.path.join(interim_dir, "labeling_subthread_all_filtered_preprocessed_no_bot.jsonl"),
-                                 out_fpath_default=os.path.join(interim_dir, "labeling_subthread_default_filtered_preprocessed_no_bot.jsonl"),
-                                 out_fpath_ct=os.path.join(interim_dir, "labeling_subthread_ct_filtered_preprocessed_no_bot.jsonl"))
+    # consolidate_filtered_threads(discussions_fpath=os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"),
+    #                              filtered_ids_fpath=os.path.join(interim_dir, 'labeling_discussion_subset', 'discussions_by_subthread.jsonl'),
+    #                              out_fpath_all=os.path.join(interim_dir, "labeling_subthread_all_filtered_preprocessed_no_bot.jsonl"),
+    #                              out_fpath_default=os.path.join(interim_dir, "labeling_subthread_default_filtered_preprocessed_no_bot.jsonl"),
+    #                              out_fpath_ct=os.path.join(interim_dir, "labeling_subthread_ct_filtered_preprocessed_no_bot.jsonl"))
 
     # out_folder = os.path.join(interim_dir, 'counts')
     # compute_baseline_volume(out_folder=out_folder)
