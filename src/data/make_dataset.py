@@ -406,6 +406,9 @@ def fullname2int(fullname):
         return fullname
     return int(fullname.split('_')[-1], 36)
 
+def int2link_fullname(fullname_int):
+    return f"t3_{np.base_repr(fullname_int)}"
+
 
 def extract_thread_structure(labeling_fpath, discussions_fpath, out_fpath):
     # read all labeling instances
@@ -436,6 +439,7 @@ def extract_thread_structure(labeling_fpath, discussions_fpath, out_fpath):
 
 
 def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_folder):
+    logger = logging.getLogger()
     # second pass
     os.makedirs(out_folder, exist_ok=True)
     with open(in_fpath) as f, open(os.path.join(out_folder, 'discussions_by_size.jsonl'), 'w+') as outf_size, \
@@ -444,18 +448,20 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
             open(os.path.join(out_folder, 'discussions_by_index_delta_subthread.jsonl'),
                  'w+') as outf_index_delta_subthread, \
             open(os.path.join(out_folder, 'discussions_by_time_delta_subthread.jsonl'),
-                 'w+') as outf_time_delta_subthread:
+                 'w+') as outf_time_delta_subthread, \
+            open(os.path.join(out_folder, 'discussions_by_subthread.jsonl'),
+                 'w+') as outf_subthread:
 
         for link_fullname, thread in map(json.loads, f):
+            for contribution in thread:
+                contribution['created_utc'] = float(contribution['created_utc'])
             thread = sorted(thread, key=lambda x: x['created_utc'], )
             # create metadata:
             # - thread_size (short threads wouldn't help much),
             thread_size = len(thread)
-            if thread_size >= min_thread_size:
-                outf_size.write(json.dumps({link_fullname: thread}, sort_keys=True) + '\n')
 
-            labeling_contribution_indices, labeling_contributions = zip(*filter_threads(lambda x: x[1]['is_labeling'],
-                                                                                        enumerate(thread)))
+            labeling_contribution_indices, labeling_contributions = zip(*filter(lambda x: x[1]['is_labeling'],
+                                                                                enumerate(thread)))
             # # - labeling_size,
             # labeling_size = len(labeling_contribution_indices)
             # - index
@@ -467,25 +473,44 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
             for labeling_index in labeling_contribution_indices:
                 # get sub-thread by combining ancestors and descendants from labeling instance
                 G = nx.DiGraph()
+                G.add_nodes_from(contribution['fullname'] for contribution in thread)
                 G.add_edges_from(
                     (contribution['fullname'], contribution['parent_fullname']) for contribution in thread if
                     contribution['parent_fullname'])
-                ancestors = list(nx.ancestors(labeling_contributions[labeling_index]['fullname']))
-                descendants = list(nx.descendants(labeling_contributions[labeling_index]['fullname']))
-                subthread = sorted(ancestors + [labeling_contributions[labeling_index]] + descendants,
+                labeling_fullname = thread[labeling_index]['fullname']
+                if labeling_fullname is None:
+                    logger.error('no fullname for ' + json.dumps(thread[labeling_index]))
+                    continue
+                if not G.has_node(labeling_fullname):
+                    logger.error(f'G {G.number_of_nodes()} {G.number_of_edges()} disconnected: ' + json.dumps(
+                        thread[labeling_index]))
+                    logger.error(G.nodes)
+                    raise ValueError
+                ancestors = list(nx.ancestors(G, labeling_fullname))
+                descendants = list(nx.descendants(G, labeling_fullname))
+                connected_contribution_fullnames = set(ancestors)
+                connected_contribution_fullnames.update(descendants)
+                connected_contributions = [i for i in thread if i['fullname'] in connected_contribution_fullnames]
+                subthread = sorted([thread[labeling_index]] + connected_contributions,
                                    key=lambda x: x['created_utc'])
+                labeling_index_subthread = None
+                for i, contribution in enumerate(subthread):
+                    if contribution['fullname'] == labeling_fullname:
+                        labeling_index_subthread = i
+                        break
 
                 # filter: on size, on +-index_from_labeling, +-timedelta_from_labeling
                 by_index_slice = [contribution for contribution in thread if abs(
-                    contribution['index'] - labeling_contributions[labeling_index]['index']) < index_delta]
+                    contribution['index'] - thread[labeling_index]['index']) < index_delta]
                 by_time_slice = [contribution for contribution in thread if abs(
-                    contribution['created_utc'] - labeling_contributions[labeling_index][
+                    contribution['created_utc'] - thread[labeling_index][
                         'created_utc']) < seconds_delta]
                 # filter: same but only in induced subgraph
-                by_index_subthread_slice = [contribution for contribution in subthread if abs(
-                    contribution['index'] - labeling_contributions[labeling_index]['index']) < index_delta]
+                by_index_subthread_slice = [contribution for contribution_index_subthread, contribution in
+                                            enumerate(subthread) if abs(
+                        contribution_index_subthread - labeling_index_subthread) < index_delta]
                 by_time_subthread_slice = [contribution for contribution in subthread if abs(
-                    contribution['created_utc'] - labeling_contributions[labeling_index][
+                    contribution['created_utc'] - thread[labeling_index][
                         'created_utc']) < seconds_delta]
 
                 # persist
@@ -495,6 +520,35 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
                     json.dumps({link_fullname: by_index_subthread_slice}, sort_keys=True) + '\n')
                 outf_time_delta_subthread.write(
                     json.dumps({link_fullname: by_time_subthread_slice}, sort_keys=True) + '\n')
+                outf_subthread.write(json.dumps({link_fullname: subthread}, sort_keys=True) + '\n')
+                if thread_size >= min_thread_size:
+                    outf_size.write(json.dumps({link_fullname: thread}, sort_keys=True) + '\n')
+
+def consolidate_filtered_threads(discussions_fpath, filtered_ids_fpath ,out_fpath_all,out_fpath_default,out_fpath_ct):
+    logger = logging.getLogger()
+    with open(discussions_fpath, encoding='utf8') as inf, \
+            open(filtered_ids_fpath) as filterf, \
+            open(out_fpath_all, 'w+', encoding='utf8') as outf_all,\
+            open(out_fpath_ct, 'w+', encoding='utf8') as outf_ct,\
+            open(out_fpath_default, 'w+', encoding='utf8') as outf_default:
+        filter_discussions = defaultdict(set)
+        for thread_item in map(json.loads, filterf):
+            for k, vv in thread_item.items():
+                # necessary as there may be multiple lines corrensponding to the same discussion, related to different labeling instances
+                filter_discussions[int(k)].update({v['fullname'] for v in vv})
+        for contribution in map(json.loads, inf):
+            filter_contribution_fullnames = filter_discussions.get(fullname2int(contribution['link_fullname']), [])
+            if fullname2int(contribution['fullname']) in filter_contribution_fullnames:
+                out_line = json.dumps(contribution, sort_keys=True)+'\n'
+                outf_all.write(out_line)
+                contribution_subreddit = contribution.get('subreddit', None)
+                if contribution_subreddit is None:
+                    logger.warning(f'no subreddit for {json.dumps(contribution)}')
+                if contribution_subreddit in CONSPIRACY_SUBREDDITS:
+                    outf_ct.write(out_line)
+                elif contribution_subreddit in DEFAULT_SUBREDDITS:
+                    outf_default.write(out_line)
+
 
 
 def compute_baseline_volume_(in_fpath, out_folder='counts'):
@@ -534,6 +588,29 @@ def compute_baseline_volume(out_folder):
     fpaths = get_contribution_fpaths()
     with Pool(40) as pool:
         pool.map(partial(compute_baseline_volume_, out_folder=out_folder), fpaths)
+
+
+def consolidate_baseline_volume(in_folder):
+    all_counts = Counter()
+    ct_counts = Counter()
+    default_counts = Counter()
+    for fname in filter(lambda x: x.startswith('RC') or x.startswith('RS'),
+                        os.listdir(in_folder)):
+        fpath = os.path.join(in_folder, fname)
+        with open(fpath) as f:
+            cnts = json.load(f)
+            if 'ct' in fname:
+                ct_counts += cnts
+            elif 'default' in fname:
+                default_counts += cnts
+            elif 'all' in fname:
+                all_counts += cnts
+    with open(os.path.join(in_folder, 'all_counts.json'), 'w+') as f:
+        json.dump(all_counts, f)
+    with open(os.path.join(in_folder, 'ct_counts.json'), 'w+') as f:
+        json.dump(ct_counts, f)
+    with open(os.path.join(in_folder, 'default_counts.json'), 'w+') as f:
+        json.dump(default_counts, f)
 
 
 if __name__ == '__main__':
@@ -614,12 +691,20 @@ if __name__ == '__main__':
     # extract_thread_structure(
     #     labeling_fpath=os.path.join(interim_dir, 'labeling_contributions_preprocessed_no_bot.jsonl'),
     #     discussions_fpath=os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"),
-    #     out_fpath=os.path.join(interim_dir, 'thread_structres.jsonl'))
-    # filter_threads(in_fpath=os.path.join(interim_dir, 'thread_structres.jsonl'),
+    #     out_fpath=os.path.join(interim_dir, 'thread_structures.jsonl'))
+    # filter_threads(in_fpath=os.path.join(interim_dir, 'thread_structures.jsonl'),
     #                seconds_delta=60 * 60,  # 1h
     #                index_delta=25,
     #                min_thread_size=50,
     #                out_folder=os.path.join(interim_dir, 'labeling_discussion_subset'),
     #                )
-    out_folder = os.path.join(interim_dir, 'counts')
-    compute_baseline_volume(out_folder=out_folder)
+    ##mv threat_structres.jsonl thread_structures.jsonl
+    consolidate_filtered_threads(discussions_fpath=os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"),
+                                 filtered_ids_fpath=os.path.join(interim_dir, 'labeling_discussion_subset', 'discussions_by_subthread.jsonl'),
+                                 out_fpath_all=os.path.join(interim_dir, "labeling_subthread_all_filtered_preprocessed_no_bot.jsonl"),
+                                 out_fpath_default=os.path.join(interim_dir, "labeling_subthread_default_filtered_preprocessed_no_bot.jsonl"),
+                                 out_fpath_ct=os.path.join(interim_dir, "labeling_subthread_ct_filtered_preprocessed_no_bot.jsonl"))
+
+    # out_folder = os.path.join(interim_dir, 'counts')
+    # compute_baseline_volume(out_folder=out_folder)
+    # consolidate_baseline_volume(in_folder=out_folder)
