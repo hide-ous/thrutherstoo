@@ -634,9 +634,9 @@ def labeler_subreddit_distribution(labeling_fpath, labeler_contributions_fpath, 
             if (labeler not in labeler_tholds) or (subreddit is None):
                 continue
             if created_utc < labeler_tholds[labeler]:
-                labeler_histograms_before[subreddit] += 1
+                labeler_histograms_before[labeler][subreddit] += 1
             else:
-                labeler_histograms_after[subreddit] += 1
+                labeler_histograms_after[labeler][subreddit] += 1
     with open(fpath_histogram_before, 'w+', encoding='utf8') as f:
         for k, v in labeler_histograms_before.items():
             f.write(json.dumps({k: v}, sort_keys=True) + '\n')
