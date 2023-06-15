@@ -28,3 +28,5 @@ ratelimit~=2.2.1
 google-api-python-client~=2.88.0
 openpyxl~=3.1.2
 networkx~=3.1
+plotly~=5.15.0
+prince~=0.10.7

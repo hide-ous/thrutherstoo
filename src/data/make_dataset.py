@@ -406,6 +406,7 @@ def fullname2int(fullname):
         return fullname
     return int(fullname.split('_')[-1], 36)
 
+
 def int2link_fullname(fullname_int):
     return f"t3_{np.base_repr(fullname_int)}"
 
@@ -524,12 +525,13 @@ def filter_threads(in_fpath, seconds_delta, index_delta, min_thread_size, out_fo
                 if thread_size >= min_thread_size:
                     outf_size.write(json.dumps({link_fullname: thread}, sort_keys=True) + '\n')
 
-def consolidate_filtered_threads(discussions_fpath, filtered_ids_fpath ,out_fpath_all,out_fpath_default,out_fpath_ct):
+
+def consolidate_filtered_threads(discussions_fpath, filtered_ids_fpath, out_fpath_all, out_fpath_default, out_fpath_ct):
     logger = logging.getLogger()
     with open(discussions_fpath, encoding='utf8') as inf, \
             open(filtered_ids_fpath) as filterf, \
-            open(out_fpath_all, 'w+', encoding='utf8') as outf_all,\
-            open(out_fpath_ct, 'w+', encoding='utf8') as outf_ct,\
+            open(out_fpath_all, 'w+', encoding='utf8') as outf_all, \
+            open(out_fpath_ct, 'w+', encoding='utf8') as outf_ct, \
             open(out_fpath_default, 'w+', encoding='utf8') as outf_default:
         filter_discussions = defaultdict(set)
         for thread_item in map(json.loads, filterf):
@@ -539,7 +541,7 @@ def consolidate_filtered_threads(discussions_fpath, filtered_ids_fpath ,out_fpat
         for contribution in map(json.loads, inf):
             filter_contribution_fullnames = filter_discussions.get(fullname2int(contribution['link_fullname']), [])
             if fullname2int(contribution['fullname']) in filter_contribution_fullnames:
-                out_line = json.dumps(contribution, sort_keys=True)+'\n'
+                out_line = json.dumps(contribution, sort_keys=True) + '\n'
                 outf_all.write(out_line)
                 contribution_subreddit = contribution.get('subreddit', None)
                 if contribution_subreddit is None:
@@ -548,7 +550,6 @@ def consolidate_filtered_threads(discussions_fpath, filtered_ids_fpath ,out_fpat
                     outf_ct.write(out_line)
                 elif contribution_subreddit in DEFAULT_SUBREDDITS:
                     outf_default.write(out_line)
-
 
 
 def compute_baseline_volume_(in_fpath, out_folder='counts'):
@@ -611,6 +612,37 @@ def consolidate_baseline_volume(in_folder):
         json.dump(ct_counts, f)
     with open(os.path.join(in_folder, 'default_counts.json'), 'w+') as f:
         json.dump(default_counts, f)
+
+
+def labeler_subreddit_distribution(labeling_fpath, labeler_contributions_fpath, fpath_histogram_before,
+                                   fpath_histogram_after):
+    with open(labeling_fpath, encoding='utf8') as labeling_f, open(labeler_contributions_fpath,
+                                                                   encoding='utf8') as labeler_f:
+        # compute the first time a labeler labels
+        labeler_tholds = defaultdict(set)
+        for labeling_instance in map(json.loads, labeling_f):
+            labeler_tholds[labeling_instance['author']].add(float(labeling_instance['created_utc']))
+        labeler_tholds = {k: min(v) for k, v in labeler_tholds.items()}
+
+        # compute how many times did each labeler contribute to a subreddit, before and after their first labeling instance
+        labeler_histograms_before = defaultdict(Counter)
+        labeler_histograms_after = defaultdict(Counter)
+        for contribution in map(json.loads, labeler_f):
+            created_utc = float(contribution['created_utc'])
+            labeler = contribution['author']
+            subreddit = contribution['subreddit']
+            if (labeler not in labeler_tholds) or (subreddit is None):
+                continue
+            if created_utc < labeler_tholds[labeler]:
+                labeler_histograms_before[subreddit] += 1
+            else:
+                labeler_histograms_after[subreddit] += 1
+    with open(fpath_histogram_before, 'w+', encoding='utf8') as f:
+        for k, v in labeler_histograms_before.items():
+            f.write(json.dumps({k: v}, sort_keys=True) + '\n')
+    with open(fpath_histogram_after, 'w+', encoding='utf8') as f:
+        for k, v in labeler_histograms_after.items():
+            f.write(json.dumps({k: v}, sort_keys=True) + '\n')
 
 
 if __name__ == '__main__':
@@ -708,3 +740,9 @@ if __name__ == '__main__':
     # out_folder = os.path.join(interim_dir, 'counts')
     # compute_baseline_volume(out_folder=out_folder)
     # consolidate_baseline_volume(in_folder=out_folder)
+
+    labeler_subreddit_distribution(
+        labeling_fpath=os.path.join(interim_dir, "labeling_contributions_preprocessed_no_bot.jsonl"),
+        labeler_contributions_fpath=os.path.join(interim_dir, 'labelers_all.jsonl'),
+        fpath_histogram_before=os.path.join(interim_dir, 'labeler_histograms_before.jsonl'),
+        fpath_histogram_after=os.path.join(interim_dir, 'labeler_histograms_after.jsonl'), )
