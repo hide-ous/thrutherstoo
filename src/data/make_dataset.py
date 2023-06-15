@@ -630,7 +630,7 @@ def labeler_subreddit_distribution(labeling_fpath, labeler_contributions_fpath, 
         for contribution in map(json.loads, labeler_f):
             created_utc = float(contribution['created_utc'])
             labeler = contribution['author']
-            subreddit = contribution['subreddit']
+            subreddit = contribution.get('subreddit', None)
             if (labeler not in labeler_tholds) or (subreddit is None):
                 continue
             if created_utc < labeler_tholds[labeler]:
