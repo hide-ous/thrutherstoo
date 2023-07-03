@@ -14,7 +14,7 @@ beautifulsoup4~=4.11.2
 Markdown~=3.4.3
 pandas~=1.5.3
 seaborn~=0.12.2
-spacy~=2.3.9
+spacy==3.5.4
 tqdm~=4.65.0
 praw~=7.7.0
 prawcore~=2.3.0
