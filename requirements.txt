@@ -30,3 +30,5 @@ openpyxl~=3.1.2
 networkx~=3.1
 plotly~=5.15.0
 prince~=0.10.7
+scipy~=1.10.1
+pyclustering @ git+https://github.com/KulikDM/pyclustering.git@Warning-Fix

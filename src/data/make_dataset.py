@@ -18,9 +18,13 @@ from dotenv import find_dotenv, load_dotenv
 import zstandard as zstd
 import io
 import networkx as nx
+from scipy.stats import zscore, gzscore
 
 from zstandard import ZstdError
 
+from pyclustering.cluster import cluster_visualizer
+from pyclustering.cluster.xmeans import xmeans
+from pyclustering.cluster.center_initializer import kmeans_plusplus_initializer
 from src.data.collect_reddit import search_pushshift
 
 CONSPIRACY_THEORIST_RE = '(conspiracist)|(conspiracy theorist)'
@@ -645,6 +649,41 @@ def labeler_subreddit_distribution(labeling_fpath, labeler_contributions_fpath, 
             f.write(json.dumps({k: v}, sort_keys=True) + '\n')
 
 
+def assign_labeler_to_subreddit(fpath_histogram_before, out_folder, min_subreddits_per_user=3,
+                                min_users_in_subreddit=10):
+    with open(fpath_histogram_before, encoding='utf8') as f:
+        df = pd.DataFrame({k: v for vv in map(json.loads, f) for k, v in vv.items()}).T
+    # df = pd.read_json(fpath_histogram_before, lines=True, orient='index', nrows=10).dropna(thresh=10, axis=1)
+    most_frequent_subs = df.idxmax(axis=1)
+    filtered_df = df.dropna(thresh=min_subreddits_per_user, axis=0).dropna(thresh=min_users_in_subreddit,
+                                                                           axis=1).fillna(0)
+    filtered_df = filtered_df.div(filtered_df.sum(axis=1), axis=0)
+    highest_std_subs = filtered_df.apply(zscore).idxmax(axis=1)
+
+    sample = filtered_df
+    # Prepare initial centers - amount of initial centers defines amount of clusters from which X-Means will
+    # start analysis.
+    amount_initial_centers = 2
+    initial_centers = kmeans_plusplus_initializer(sample, amount_initial_centers).initialize()
+    # Create instance of X-Means algorithm. The algorithm will start analysis from 2 clusters, the maximum
+    # number of clusters that can be allocated is 20.
+    xmeans_instance = xmeans(sample, initial_centers, 20)
+    xmeans_instance.process()
+    # Extract clustering results: clusters and their centers
+    clusters = xmeans_instance.get_clusters()
+    centers = xmeans_instance.get_centers()
+
+    cluster_assocs = dict()
+    for cluster_num, cluster in enumerate(clusters):
+        cluster_assocs.update(dict(zip(sample.iloc[cluster].index, [cluster_num] * len(cluster))))
+    cluster_series = pd.Series(cluster_assocs)[sample.index]
+    center_df = pd.DataFrame(centers, columns=sample.columns)
+    most_frequent_subs.to_csv(os.path.join(out_folder, 'labeler_most_frequent_subs.csv'))
+    highest_std_subs.to_csv(os.path.join(out_folder, 'labeler_highest_std_subs.csv'))
+    cluster_series.to_csv(os.path.join(out_folder, 'labeler_clusters.csv'))
+    center_df.to_csv(os.path.join(out_folder, 'labeler_cluster_centers.csv'))
+
+
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
@@ -741,8 +780,13 @@ if __name__ == '__main__':
     # compute_baseline_volume(out_folder=out_folder)
     # consolidate_baseline_volume(in_folder=out_folder)
 
-    labeler_subreddit_distribution(
-        labeling_fpath=os.path.join(interim_dir, "labeling_contributions_preprocessed_no_bot.jsonl"),
-        labeler_contributions_fpath=os.path.join(interim_dir, 'labelers_all.jsonl'),
-        fpath_histogram_before=os.path.join(interim_dir, 'labeler_histograms_before.jsonl'),
-        fpath_histogram_after=os.path.join(interim_dir, 'labeler_histograms_after.jsonl'), )
+    # labeler_subreddit_distribution(
+    #     labeling_fpath=os.path.join(interim_dir, "labeling_contributions_preprocessed_no_bot.jsonl"),
+    #     labeler_contributions_fpath=os.path.join(interim_dir, 'labelers_all.jsonl'),
+    #     fpath_histogram_before=os.path.join(interim_dir, 'labeler_histograms_before.jsonl'),
+    #     fpath_histogram_after=os.path.join(interim_dir, 'labeler_histograms_after.jsonl'), )
+
+    assign_labeler_to_subreddit(fpath_histogram_before=os.path.join(interim_dir, 'labeler_histograms_before.jsonl'),
+                                out_folder=interim_dir,
+                                min_subreddits_per_user=3,
+                                min_users_in_subreddit=10)
