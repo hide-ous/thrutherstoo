@@ -250,7 +250,8 @@ def score_dimensions(sentences, is_cuda, model_dir, chunk_size=1000):
 
     scores = dict()
     for dim in dims:
-        scores[dim] = score_dimension(sentences=sentences, dim=dim, is_cuda=is_cuda, model_dir=model_dir, em=em, chunk_size=chunk_size)
+        scores[dim] = score_dimension(sentences=sentences, dim=dim, is_cuda=is_cuda, model_dir=model_dir, em=em,
+                                      chunk_size=chunk_size)
     to_return = [{dim: scores[dim][i] for dim in dims} for i in range(len(sentences))]
     return to_return
 
@@ -299,4 +300,4 @@ if __name__ == '__main__':
 
     scores = score_dimensions(sentences=sents, is_cuda=is_cuda, model_dir=external_dir)
     for sent, scores in zip(sents, scores):
-        print(sent, {k:round(v, 2) for k, v in scores.items()})
+        print(sent, {k: round(v, 2) for k, v in scores.items()})

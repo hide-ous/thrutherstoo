@@ -25,6 +25,7 @@ from src.features.liwcifer import read_liwc, df_liwcifer, \
 from src.features.perspective import get_toxicity_score, \
     REQUESTED_ATTRIBUTES_ALL
 from src.features.preprocess_text import clean_items, preprocess_pre_tokenizing
+from src.features.social_dimensions import score_dimensions
 from src.utils import to_file, chunkize_iter
 
 from langdetect import detect
@@ -631,6 +632,61 @@ def enhance_with_liwc(n_threads=40):
             #         outf.write(json.dumps({k: v}) + '\n')
 
 
+def enhance_with_social_dimensions():
+    logger = logging.getLogger()
+    project_dir = Path(__file__).resolve().parents[2]
+
+    interim_dir = os.path.join(project_dir, 'data', 'interim')
+    external_dir = os.path.join(project_dir, 'data', 'external')
+
+    labeling_fpath = os.path.join(interim_dir,
+                                  'labeling_contributions_preprocessed_no_bot.jsonl')
+
+    k = 10000
+    sample_fpath = os.path.join(interim_dir,
+                                f'sample_contributions_{k}_preprocessed.jsonl')
+    ct_sample_fpath = os.path.join(project_dir, 'data', 'interim',
+                                   f'sample_contributions_{k}_ct_preprocessed.jsonl')
+    default_sample_fpath = os.path.join(project_dir, 'data', 'interim',
+                                        f'sample_contributions_{k}_default_preprocessed.jsonl')
+    discussion_fpath = os.path.join(interim_dir,
+                                    'labeling_subthread_all_filtered_preprocessed_no_bot.jsonl')
+    discussion_ct_fpath = os.path.join(interim_dir,
+                                       'labeling_subthread_ct_filtered_preprocessed_no_bot.jsonl')
+    discussion_default_fpath = os.path.join(interim_dir,
+                                            'labeling_subthread_default_filtered_preprocessed_no_bot.jsonl')
+    out_dir = os.path.join(interim_dir, 'social_dimensions')
+    os.makedirs(out_dir, exist_ok=True)
+    is_cuda = False
+
+    for input_fpath in [
+        labeling_fpath,
+        sample_fpath,
+        ct_sample_fpath,
+        default_sample_fpath,
+        discussion_fpath,
+        discussion_ct_fpath,
+        discussion_default_fpath
+    ]:
+        output_fpath = os.path.join(out_dir,
+                                    os.path.split(input_fpath)[-1].replace(
+                                        '.jsonl',
+                                        '_social_dimensions.jsonl'))
+        with open(output_fpath, 'w+', encoding='utf8') as outf:
+            for chunk in map(lambda chunk:
+                             chunk.drop_duplicates(subset=['fullname']).set_index(
+                                 'fullname')[
+                                 ['preprocessed_text']],
+                             pd.read_json(input_fpath, lines=True, chunksize=10000,
+                                          encoding='utf8')):
+                idx = chunk.index
+                scores = score_dimensions(sentences=chunk.preprocessed_text,
+                                          is_cuda=is_cuda,
+                                          model_dir=external_dir)
+                for k, v in zip(idx, scores):
+                    outf.write(json.dumps({k: v}, sort_keys=True) + '\n')
+
+
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
@@ -639,9 +695,10 @@ if __name__ == '__main__':
     # # then, should run the filter_bots function in make_dataset
     # # then, should run the divide_discussions and subsample_further
     # # then, should run extract_thread_structure, filter_threads, consolidate_filtered_threads
-    separate_contributions_by_year()
-    merge_samples_with_labeling_contributions()
-    build_embeddings()
-    align_embeddings()
-    enhance_with_perspective()
-    enhance_with_liwc()
+    # separate_contributions_by_year()
+    # merge_samples_with_labeling_contributions()
+    # build_embeddings()
+    # align_embeddings()
+    # enhance_with_perspective()
+    # enhance_with_liwc()
+    enhance_with_social_dimensions()
