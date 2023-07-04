@@ -651,9 +651,9 @@ def labeler_subreddit_distribution(labeling_fpath, labeler_contributions_fpath, 
 
 def assign_labeler_to_subreddit(fpath_histogram_before, out_folder, min_subreddits_per_user=3,
                                 min_users_in_subreddit=10):
-    with open(fpath_histogram_before, encoding='utf8') as f:
-        df = pd.DataFrame({k: v for vv in map(json.loads, f) for k, v in vv.items()}).T
-    # df = pd.read_json(fpath_histogram_before, lines=True, orient='index', nrows=10).dropna(thresh=10, axis=1)
+    # with open(fpath_histogram_before, encoding='utf8') as f:
+    #     df = pd.DataFrame({k: v for vv in map(json.loads, f) for k, v in vv.items()}).T
+    df = pd.read_json(fpath_histogram_before, lines=True, orient='index')
     most_frequent_subs = df.idxmax(axis=1)
     filtered_df = df.dropna(thresh=min_subreddits_per_user, axis=0).dropna(thresh=min_users_in_subreddit,
                                                                            axis=1).fillna(0)
