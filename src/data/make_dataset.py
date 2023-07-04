@@ -26,6 +26,7 @@ from pyclustering.cluster import cluster_visualizer
 from pyclustering.cluster.xmeans import xmeans
 from pyclustering.cluster.center_initializer import kmeans_plusplus_initializer
 from src.data.collect_reddit import search_pushshift
+from src.utils import chunkize_iter
 
 CONSPIRACY_THEORIST_RE = '(conspiracist)|(conspiracy theorist)'
 CONSPIRACY_SUBREDDITS = ["984isreality", "911truth", "actualconspiracies", "Bilderberg", "C_S_T", "CHEMPRINTS",
@@ -653,10 +654,32 @@ def assign_labeler_to_subreddit(fpath_histogram_before, out_folder, min_subreddi
                                 min_users_in_subreddit=10):
     # with open(fpath_histogram_before, encoding='utf8') as f:
     #     df = pd.DataFrame({k: v for vv in map(json.loads, f) for k, v in vv.items()}).T
-    df = pd.read_json(fpath_histogram_before, lines=True, orient='index')
-    most_frequent_subs = df.idxmax(axis=1)
-    filtered_df = df.dropna(thresh=min_subreddits_per_user, axis=0).dropna(thresh=min_users_in_subreddit,
-                                                                           axis=1).fillna(0)
+    # df = pd.read_json(fpath_histogram_before, lines=True, orient='index')
+    most_frequent_subs = list()
+    subreddit_sums = list()
+    with open(fpath_histogram_before, encoding='utf8') as f:
+        for chunk in chunkize_iter(map(json.loads, f), 1000):
+            df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()}).T
+            most_frequent_subs.append(df.idxmax(axis=1))
+            df = df[df.fillna(0).astype(bool).sum(axis=1)>min_subreddits_per_user] # discard low-freq users from the computation
+            subreddit_sums.append(df.fillna(0).astype(bool).sum(axis=0))
+
+    most_frequent_subs = pd.concat(most_frequent_subs)
+    subreddit_sums = pd.concat(subreddit_sums, axis=1)
+    subreddit_sums = subreddit_sums.sum(axis=1)
+    remaining_subreddits = subreddit_sums[subreddit_sums>min_users_in_subreddit].index
+
+    dfs = list()
+    with open(fpath_histogram_before, encoding='utf8') as f:
+        for chunk in chunkize_iter(map(json.loads, f), 1000):
+            df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()}).T
+            df = df[remaining_subreddits]
+            df = df[df.fillna(0).astype(bool).sum(axis=1)>min_subreddits_per_user]
+            dfs.append(df)
+    filtered_df = pd.concat(dfs).fillna(0)
+    # most_frequent_subs = df.idxmax(axis=1)
+    # filtered_df = df.dropna(thresh=min_subreddits_per_user, axis=0).dropna(thresh=min_users_in_subreddit,
+    #                                                                        axis=1).fillna(0)
     filtered_df = filtered_df.div(filtered_df.sum(axis=1), axis=0)
     highest_std_subs = filtered_df.apply(zscore).idxmax(axis=1)
 

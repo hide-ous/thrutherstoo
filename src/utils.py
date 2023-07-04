@@ -2,6 +2,7 @@ import json
 import os.path
 
 import pathlib
+from itertools import islice
 
 
 class Formatter:
@@ -45,3 +46,8 @@ def to_file(store_path, stream, formatter=None):
     with open(store_path, 'w+') as f:
         for line in stream:
             f.write(formatter.format(line) + '\n')
+
+
+def chunkize_iter(in_stream, chunk_size=1000):
+    while len(chunk := list(islice(in_stream, chunk_size))):
+        yield chunk

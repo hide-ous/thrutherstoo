@@ -2,12 +2,10 @@ import datetime
 import json
 import logging
 import os
-import pickle
 import random
 import re
 import time
 from functools import partial
-from itertools import islice
 from multiprocessing.pool import Pool
 from pathlib import Path
 
@@ -19,15 +17,15 @@ from gensim.test.utils import datapath
 from googleapiclient import discovery
 from tqdm import tqdm
 
-from src.data.make_dataset import CONSPIRACY_THEORIST_RE, CONSPIRACY_SUBREDDITS, \
+from src.data.make_dataset import CONSPIRACY_SUBREDDITS, \
     DEFAULT_SUBREDDITS
 from src.features.gensim_word2vec_procrustes_align import align_years
 from src.features.liwcifer import read_liwc, df_liwcifer, \
     get_matchers
 from src.features.perspective import get_toxicity_score, \
-    REQUESTED_ATTRIBUTES_TOXICITY, REQUESTED_ATTRIBUTES_ALL
+    REQUESTED_ATTRIBUTES_ALL
 from src.features.preprocess_text import clean_items, preprocess_pre_tokenizing
-from src.utils import to_file
+from src.utils import to_file, chunkize_iter
 
 from langdetect import detect
 
@@ -102,11 +100,6 @@ def detect_discussions(item, filter_values, filter_field):
 
 def detect_multiple_discussions(items, filter_values, filter_field):
     return [item for item in items if item[filter_field] in filter_values]
-
-
-def chunkize_iter(in_stream, chunk_size=1000):
-    while len(chunk := list(islice(in_stream, chunk_size))):
-        yield chunk
 
 
 def filter_discussions(item_stream, discussions,
