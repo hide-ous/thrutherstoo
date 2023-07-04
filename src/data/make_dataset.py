@@ -667,7 +667,7 @@ def assign_labeler_to_subreddit(fpath_histogram_before, out_folder, min_subreddi
     most_frequent_subs = pd.concat(most_frequent_subs)
     subreddit_sums = pd.concat(subreddit_sums, axis=1)
     subreddit_sums = subreddit_sums.sum(axis=1)
-    remaining_subreddits = subreddit_sums[subreddit_sums>min_users_in_subreddit].index
+    remaining_subreddits = list(subreddit_sums[subreddit_sums>min_users_in_subreddit].index)
 
     dfs = list()
     with open(fpath_histogram_before, encoding='utf8') as f:
