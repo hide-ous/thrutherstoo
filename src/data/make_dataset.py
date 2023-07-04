@@ -658,7 +658,7 @@ def assign_labeler_to_subreddit(fpath_histogram_before, out_folder, min_subreddi
     most_frequent_subs = list()
     subreddit_sums = list()
     with open(fpath_histogram_before, encoding='utf8') as f:
-        for chunk in chunkize_iter(map(json.loads, f), 1000):
+        for chunk in chunkize_iter(map(json.loads, f), 10000):
             df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()}).T
             most_frequent_subs.append(df.idxmax(axis=1))
             df = df[df.fillna(0).astype(bool).sum(axis=1)>min_subreddits_per_user] # discard low-freq users from the computation
@@ -671,7 +671,7 @@ def assign_labeler_to_subreddit(fpath_histogram_before, out_folder, min_subreddi
 
     dfs = list()
     with open(fpath_histogram_before, encoding='utf8') as f:
-        for chunk in chunkize_iter(map(json.loads, f), 1000):
+        for chunk in chunkize_iter(map(json.loads, f), 10000):
             df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()}).T
             df = df[remaining_subreddits]
             df = df[df.fillna(0).astype(bool).sum(axis=1)>min_subreddits_per_user]
