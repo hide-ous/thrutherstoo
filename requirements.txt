@@ -32,3 +32,5 @@ plotly~=5.15.0
 prince~=0.10.7
 scipy~=1.10.1
 pyclustering @ git+https://github.com/KulikDM/pyclustering.git@Warning-Fix
+torch~=2.0.0+cu118
+nltk~=3.8.1
