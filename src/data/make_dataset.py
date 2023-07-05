@@ -669,14 +669,14 @@ def assign_labeler_to_subreddit(fpath_histogram_before, out_folder, min_subreddi
     subreddit_sums = subreddit_sums.sum(axis=1)
     remaining_subreddits = list(subreddit_sums[subreddit_sums>min_users_in_subreddit].index)
 
-    dfs = list()
+    filtered_df = pd.DataFrame(columns=remaining_subreddits, dtype=int)
     with open(fpath_histogram_before, encoding='utf8') as f:
         for chunk in chunkize_iter(map(json.loads, f), 10000):
             df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()}).T
             df = df[[i for i in remaining_subreddits if i in df.columns]]
             df = df[df.fillna(0).astype(bool).sum(axis=1)>min_subreddits_per_user]
-            dfs.append(df)
-    filtered_df = pd.concat(dfs).fillna(0)
+            filtered_df = pd.concat((filtered_df, df))
+    filtered_df = filtered_df.fillna(0)
     # most_frequent_subs = df.idxmax(axis=1)
     # filtered_df = df.dropna(thresh=min_subreddits_per_user, axis=0).dropna(thresh=min_users_in_subreddit,
     #                                                                        axis=1).fillna(0)
