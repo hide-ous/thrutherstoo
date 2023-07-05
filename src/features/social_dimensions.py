@@ -226,21 +226,32 @@ def glove4gensim(file_dir):
 def score_dimension(sentences, dim, is_cuda, model_dir, em, chunk_size=1000, max_tokens=100):
     weight_file = os.path.join(model_dir, f'LSTM/{dim}/best-weights.pth')
     with torch.no_grad():
-        # load model
-        model = LSTMClassifier(embedding_dim=300, hidden_dim=300)
-        state_dict = torch.load(weight_file)
-        model.load_state_dict(state_dict)
-        if is_cuda:
-            model.cuda()
+        model = load_model(is_cuda, weight_file)
 
         to_return = list()
         for batch in chunks(sentences, n=chunk_size):
-            vector = torch.tensor(padBatch([em.obtain_vectors_from_sentence(tokenize(sent)[:max_tokens], True) for sent in batch]),
-                                  device='cuda' if is_cuda else 'cpu').float()
+            vector = vectorize(batch, em, is_cuda, max_tokens)
             scores = model(vector)
             to_return.extend([i.item() for i in scores])
             torch.cuda.empty_cache()
     return to_return
+
+
+def vectorize(batch, em, is_cuda, max_tokens):
+    vector = torch.tensor(
+        padBatch([em.obtain_vectors_from_sentence(tokenize(sent)[:max_tokens], True) for sent in batch]),
+        device='cuda' if is_cuda else 'cpu').float()
+    return vector
+
+
+def load_model(is_cuda, weight_file):
+    # load model
+    model = LSTMClassifier(embedding_dim=300, hidden_dim=300)
+    state_dict = torch.load(weight_file)
+    model.load_state_dict(state_dict)
+    if is_cuda:
+        model.cuda()
+    return model
 
 
 def score_dimensions(sentences, is_cuda, model_dir, chunk_size=1000, max_tokens=100):
@@ -250,12 +261,21 @@ def score_dimensions(sentences, is_cuda, model_dir, chunk_size=1000, max_tokens=
     # load embeddings
     em = ExtractWordEmbeddings(emb_type='glove', emb_dir=model_dir)
 
-    scores = dict()
-    for dim in dims:
-        scores[dim] = score_dimension(sentences=sentences, dim=dim, is_cuda=is_cuda, model_dir=model_dir, em=em,
-                                      chunk_size=chunk_size, max_tokens=max_tokens)
-    to_return = [{dim: scores[dim][i] for dim in dims} for i in range(len(sentences))]
-    return to_return
+    models = {dim: load_model(is_cuda=is_cuda, weight_file=os.path.join(model_dir, f'LSTM/{dim}/best-weights.pth'))
+              for dim in dims}
+    with torch.no_grad():
+        to_return = list()
+        for batch in chunks(sentences, n=chunk_size):
+            vector = vectorize(batch, em, is_cuda, max_tokens)
+            batch_results = [dict() for _ in range(len(batch))]
+            for dim in dims:
+                model = models[dim]
+                scores = model(vector)
+                for i, r in enumerate(scores):
+                    batch_results[i][dim] = r.item()
+                torch.cuda.empty_cache()
+            to_return.extend(batch_results)
+        return to_return
 
 
 if __name__ == '__main__':
