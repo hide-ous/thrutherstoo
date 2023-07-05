@@ -741,6 +741,7 @@ if __name__ == '__main__':
     project_dir = Path(__file__).resolve().parents[2]
     interim_dir = os.path.join(project_dir, 'data', 'interim')
     raw_dir = os.path.join(project_dir, 'data', 'raw')
+    external_dir = os.path.join(project_dir, 'data', 'external')
 
     # parse_files(os.path.join(project_dir, 'data', 'interim'))
     # labeling_fpath = os.path.join(project_dir, 'data', 'interim',
@@ -835,7 +836,8 @@ if __name__ == '__main__':
     #     fpath_histogram_before=os.path.join(interim_dir, 'labeler_histograms_before.jsonl'),
     #     fpath_histogram_after=os.path.join(interim_dir, 'labeler_histograms_after.jsonl'), )
 
-    assign_labeler_to_subreddit(fpath_histogram_before=os.path.join(interim_dir, 'labeler_histograms_before.jsonl'),
+    assign_labeler_to_subreddit(external_dir=external_dir,
+                                fpath_histogram_before=os.path.join(interim_dir, 'labeler_histograms_before.jsonl'),
                                 out_folder=interim_dir,
                                 min_subreddits_per_user=3,
                                 min_users_in_subreddit=20)
