@@ -223,25 +223,27 @@ def glove4gensim(file_dir):
     return
 
 
-def score_dimension(sentences, dim, is_cuda, model_dir, em, chunk_size=1000):
+def score_dimension(sentences, dim, is_cuda, model_dir, em, chunk_size=1000, max_tokens=100):
     weight_file = os.path.join(model_dir, f'LSTM/{dim}/best-weights.pth')
-    # load model
-    model = LSTMClassifier(embedding_dim=300, hidden_dim=300)
-    state_dict = torch.load(weight_file)
-    model.load_state_dict(state_dict)
-    if is_cuda:
-        model.cuda()
+    with torch.no_grad():
+        # load model
+        model = LSTMClassifier(embedding_dim=300, hidden_dim=300)
+        state_dict = torch.load(weight_file)
+        model.load_state_dict(state_dict)
+        if is_cuda:
+            model.cuda()
 
-    to_return = list()
-    for batch in chunks(sentences, n=chunk_size):
-        vector = torch.tensor(padBatch([em.obtain_vectors_from_sentence(tokenize(sent), True) for sent in batch]),
-                              device='cuda' if is_cuda else 'cpu').float()
-        scores = model(vector)
-        to_return.extend([i.item() for i in scores])
+        to_return = list()
+        for batch in chunks(sentences, n=chunk_size):
+            vector = torch.tensor(padBatch([em.obtain_vectors_from_sentence(tokenize(sent)[:max_tokens], True) for sent in batch]),
+                                  device='cuda' if is_cuda else 'cpu').float()
+            scores = model(vector)
+            to_return.extend([i.item() for i in scores])
+            torch.cuda.empty_cache()
     return to_return
 
 
-def score_dimensions(sentences, is_cuda, model_dir, chunk_size=1000):
+def score_dimensions(sentences, is_cuda, model_dir, chunk_size=1000, max_tokens=100):
     embedding_fpath = os.path.join(model_dir, 'glove.840B.300d.txt')
     if not os.path.exists(os.path.join(model_dir, 'glove.840B.300d.wv')):
         glove4gensim(embedding_fpath)  # change file name if using different embeddings
@@ -251,7 +253,7 @@ def score_dimensions(sentences, is_cuda, model_dir, chunk_size=1000):
     scores = dict()
     for dim in dims:
         scores[dim] = score_dimension(sentences=sentences, dim=dim, is_cuda=is_cuda, model_dir=model_dir, em=em,
-                                      chunk_size=chunk_size)
+                                      chunk_size=chunk_size, max_tokens=max_tokens)
     to_return = [{dim: scores[dim][i] for dim in dims} for i in range(len(sentences))]
     return to_return
 

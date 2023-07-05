@@ -657,7 +657,7 @@ def enhance_with_social_dimensions():
                                             'labeling_subthread_default_filtered_preprocessed_no_bot.jsonl')
     out_dir = os.path.join(interim_dir, 'social_dimensions')
     os.makedirs(out_dir, exist_ok=True)
-    is_cuda = False
+    is_cuda = True
 
     for input_fpath in [
         labeling_fpath,
@@ -673,16 +673,20 @@ def enhance_with_social_dimensions():
                                         '.jsonl',
                                         '_social_dimensions.jsonl'))
         with open(output_fpath, 'w+', encoding='utf8') as outf:
-            for chunk in map(lambda chunk:
+            for chunk in tqdm(map(lambda chunk:
                              chunk.drop_duplicates(subset=['fullname']).set_index(
                                  'fullname')[
                                  ['preprocessed_text']],
                              pd.read_json(input_fpath, lines=True, chunksize=10000,
-                                          encoding='utf8')):
+                                          encoding='utf8')),
+                              f'processing {input_fpath}'):
                 idx = chunk.index
-                scores = score_dimensions(sentences=chunk.preprocessed_text,
+                scores = score_dimensions(sentences=chunk.preprocessed_text.tolist(),
                                           is_cuda=is_cuda,
-                                          model_dir=external_dir)
+                                          model_dir=external_dir,
+                                          chunk_size=2000,
+                                          max_tokens=500,
+                                          )
                 for k, v in zip(idx, scores):
                     outf.write(json.dumps({k: v}, sort_keys=True) + '\n')
 

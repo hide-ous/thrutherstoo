@@ -673,7 +673,7 @@ def assign_labeler_to_subreddit(fpath_histogram_before, out_folder, min_subreddi
     with open(fpath_histogram_before, encoding='utf8') as f:
         for chunk in chunkize_iter(map(json.loads, f), 10000):
             df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()}).T
-            df = df[remaining_subreddits]
+            df = df[[i for i in remaining_subreddits if i in df.columns]]
             df = df[df.fillna(0).astype(bool).sum(axis=1)>min_subreddits_per_user]
             dfs.append(df)
     filtered_df = pd.concat(dfs).fillna(0)
