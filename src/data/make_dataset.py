@@ -650,6 +650,23 @@ def labeler_subreddit_distribution(labeling_fpath, labeler_contributions_fpath, 
             f.write(json.dumps({k: v}, sort_keys=True) + '\n')
 
 
+def _process_chunk(chunk, ct, dims, min_subreddits_per_user):
+    # compute most frequent subs
+    df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()}).T
+    most_frequent_subs = df.idxmax(axis=1)
+    # compute scores for Waller+Anderson's dimensions
+    normed = df.div(df.sum(axis=1), axis=0)
+    res = normed.apply(lambda row: (row * dims.T).sum(axis=1), axis=1)
+    outf_dims = [json.dumps({n: d.to_dict()}, sort_keys=True) + '\n' for n, d in res.iterrows()]
+    # compute scores for ct
+    res = normed.apply(lambda row: (row * ct.T).sum(axis=1), axis=1)
+    outf_ct = [json.dumps({n: d.to_dict()}, sort_keys=True) + '\n' for n, d in res.iterrows()]
+    # compute users per subreddit
+    df = df[df.fillna(0).astype(bool).sum(
+        axis=1) > min_subreddits_per_user]  # discard low-freq users from the computation
+    subreddit_sums = df.fillna(0).astype(bool).sum(axis=0)
+    return most_frequent_subs, outf_dims, outf_ct, subreddit_sums
+
 def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder, min_subreddits_per_user=3,
                                 min_users_in_subreddit=20):
     # with open(fpath_histogram_before, encoding='utf8') as f:
@@ -662,25 +679,37 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
     subreddit_sums = list()
     with open(fpath_histogram_before, encoding='utf8') as f, \
             open(os.path.join(out_folder, 'labeler_sub_dimensions.jsonl'), 'w+', encoding='utf8') as outf_dims, \
-            open(os.path.join(out_folder, 'labeler_sub_conspiracy.jsonl'), 'w+', encoding='utf8') as outf_ct:
-        for chunk in chunkize_iter(map(json.loads, f), 10000):
-            #compute most frequent subs
-            df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()}).T
-            most_frequent_subs.append(df.idxmax(axis=1))
-            #compute scores for Waller+Anderson's dimensions
-            normed = df.div(df.sum(axis=1), axis=0)
-            res = normed.apply(lambda row: (row * dims.T).sum(axis=1), axis=1)
-            for n, d in res.iterrows():
-                outf_dims.write(json.dumps({n: d.to_dict()}, sort_keys=True)+'\n')
-            #compute scores for ct
-            res = normed.apply(lambda row: (row * ct.T).sum(axis=1), axis=1)
-            for n, d in res.iterrows():
-                outf_ct.write(json.dumps({n: d.to_dict()}, sort_keys=True)+'\n')
-
-
-            df = df[df.fillna(0).astype(bool).sum(
-                axis=1) > min_subreddits_per_user]  # discard low-freq users from the computation
-            subreddit_sums.append(df.fillna(0).astype(bool).sum(axis=0))
+            open(os.path.join(out_folder, 'labeler_sub_conspiracy.jsonl'), 'w+', encoding='utf8') as outf_ct, \
+            Pool(50) as pool:
+        for res in pool.map(partial(_process_chunk,
+                                      ct=ct,
+                                      dims=dims,
+                                      min_subreddits_per_user=min_subreddits_per_user),
+                              chunkize_iter(map(json.loads, f), 10000)):
+            most_frequent_subs_, outf_dims_, outf_ct_, subreddit_sums_ = res
+            subreddit_sums.append(subreddit_sums_)
+            most_frequent_subs.append(most_frequent_subs_)
+            for el in outf_dims_:
+                outf_dims.write(el)
+            for el in outf_ct_:
+                outf_ct.write(el)
+            # #compute most frequent subs
+            # df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()}).T
+            # most_frequent_subs.append(df.idxmax(axis=1))
+            # #compute scores for Waller+Anderson's dimensions
+            # normed = df.div(df.sum(axis=1), axis=0)
+            # res = normed.apply(lambda row: (row * dims.T).sum(axis=1), axis=1)
+            # for n, d in res.iterrows():
+            #     outf_dims.write(json.dumps({n: d.to_dict()}, sort_keys=True)+'\n')
+            # #compute scores for ct
+            # res = normed.apply(lambda row: (row * ct.T).sum(axis=1), axis=1)
+            # for n, d in res.iterrows():
+            #     outf_ct.write(json.dumps({n: d.to_dict()}, sort_keys=True)+'\n')
+            #
+            #
+            # df = df[df.fillna(0).astype(bool).sum(
+            #     axis=1) > min_subreddits_per_user]  # discard low-freq users from the computation
+            # subreddit_sums.append(df.fillna(0).astype(bool).sum(axis=0))
 
     most_frequent_subs = pd.concat(most_frequent_subs)
     most_frequent_subs.to_csv(os.path.join(out_folder, 'labeler_most_frequent_subs.csv'))
