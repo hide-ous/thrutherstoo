@@ -254,7 +254,8 @@ def load_model(is_cuda, weight_file):
     return model
 
 
-def score_dimensions(sentences, is_cuda, model_dir, chunk_size=1000, max_tokens=100):
+def score_dimensions(sentences, is_cuda, model_dir, chunk_size=1000, max_tokens=100,
+                     idx_field='fullname', text_field='preprocessed_text'):
     embedding_fpath = os.path.join(model_dir, 'glove.840B.300d.txt')
     if not os.path.exists(os.path.join(model_dir, 'glove.840B.300d.wv')):
         glove4gensim(embedding_fpath)  # change file name if using different embeddings
@@ -264,9 +265,10 @@ def score_dimensions(sentences, is_cuda, model_dir, chunk_size=1000, max_tokens=
     models = {dim: load_model(is_cuda=is_cuda, weight_file=os.path.join(model_dir, f'LSTM/{dim}/best-weights.pth'))
               for dim in dims}
     with torch.no_grad():
-        to_return = list()
-        for batch in chunks(sentences, n=chunk_size):
-            vector = vectorize(batch, em, is_cuda, max_tokens)
+        for batch in chunkize_iter(sentences, chunk_size=chunk_size):
+            indices = [i[idx_field] for i in batch]
+            texts = [i[text_field] for i in batch]
+            vector = vectorize(texts, em, is_cuda, max_tokens)
             batch_results = [dict() for _ in range(len(batch))]
             for dim in dims:
                 model = models[dim]
@@ -274,8 +276,8 @@ def score_dimensions(sentences, is_cuda, model_dir, chunk_size=1000, max_tokens=
                 for i, r in enumerate(scores):
                     batch_results[i][dim] = r.item()
                 torch.cuda.empty_cache()
-            to_return.extend(batch_results)
-        return to_return
+            for i, r in zip(indices, batch_results):
+                yield {i: r}
 
 
 if __name__ == '__main__':

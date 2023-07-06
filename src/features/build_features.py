@@ -660,10 +660,10 @@ def enhance_with_social_dimensions():
     is_cuda = True
 
     for input_fpath in [
-        labeling_fpath,
+        # labeling_fpath,
         sample_fpath,
-        ct_sample_fpath,
-        default_sample_fpath,
+        # ct_sample_fpath,
+        # default_sample_fpath,
         discussion_fpath,
         discussion_ct_fpath,
         discussion_default_fpath
@@ -672,23 +672,18 @@ def enhance_with_social_dimensions():
                                     os.path.split(input_fpath)[-1].replace(
                                         '.jsonl',
                                         '_social_dimensions.jsonl'))
-        with open(output_fpath, 'w+', encoding='utf8') as outf:
-            for chunk in tqdm(map(lambda chunk:
-                             chunk.drop_duplicates(subset=['fullname']).set_index(
-                                 'fullname')[
-                                 ['preprocessed_text']],
-                             pd.read_json(input_fpath, lines=True, chunksize=10000,
-                                          encoding='utf8')),
-                              f'processing {input_fpath}'):
-                idx = chunk.index
-                scores = score_dimensions(sentences=chunk.preprocessed_text.tolist(),
-                                          is_cuda=is_cuda,
-                                          model_dir=external_dir,
-                                          chunk_size=2000,
-                                          max_tokens=500,
-                                          )
-                for k, v in zip(idx, scores):
-                    outf.write(json.dumps({k: v}, sort_keys=True) + '\n')
+        with open(output_fpath, 'w+', encoding='utf8') as outf, open(input_fpath, encoding='utf8') as inf:
+            reader = map(json.loads, inf)
+            scores = score_dimensions(sentences=reader,
+                                      is_cuda=is_cuda,
+                                      model_dir=external_dir,
+                                      chunk_size=1000,
+                                      max_tokens=500,
+                                      idx_field='fullname',
+                                      text_field='preprocessed_text'
+                                      )
+            for score in scores:
+                outf.write(json.dumps(score, sort_keys=True) + '\n')
 
 
 if __name__ == '__main__':
