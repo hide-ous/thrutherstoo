@@ -714,7 +714,7 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
             open(os.path.join(out_folder, 'labeler_sub_dimensions.jsonl'), 'w+', encoding='utf8') as outf_dims, \
             open(os.path.join(out_folder, 'labeler_sub_conspiracy.jsonl'), 'w+', encoding='utf8') as outf_ct, \
             Pool(50) as pool:
-        for res in pool.imap(partial(_process_chunk,
+        for res in pool.imap_unordered(partial(_process_chunk,
                                      ct=ct,
                                      dims=dims,
                                      min_subreddits_per_user=min_subreddits_per_user),
@@ -763,9 +763,9 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
             df = df[[i for i in remaining_subreddits if i in df.columns]]
             df = df[df.fillna(0).astype(bool).sum(axis=1) > min_subreddits_per_user]
             df = df.div(df.sum(axis=1), axis=0)
-            filtered_df = pd.concat((filtered_df, df))
+            filtered_df = pd.concat((filtered_df, df.fillna(0)))
 
-    filtered_df.fillna(0, inplace=True)
+    # filtered_df.fillna(0, inplace=True)
     # most_frequent_subs = df.idxmax(axis=1)
     # filtered_df = df.dropna(thresh=min_subreddits_per_user, axis=0).dropna(thresh=min_users_in_subreddit,
     #                                                                        axis=1).fillna(0)
