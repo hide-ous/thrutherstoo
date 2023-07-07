@@ -699,6 +699,28 @@ def _process_chunk(chunk, ct, dims, min_subreddits_per_user):
     # return most_frequent_subs, outf_dims, outf_ct, subreddit_sums
 
 
+def subreddit_mean_and_variance(chunk, all_subs):
+    subreddit_totals = dict()
+    users = set()
+    for line in chunk:
+        user, data = tuple(line.items())[0]
+        if user in users: continue
+        for subreddit in all_subs:
+            subreddit_totals[subreddit] = subreddit_totals.get(subreddit, 0) + data.get(subreddit, 0)
+        users.add(user)
+    n_users = len(users)
+    subreddit_averages = {subreddit: total / n_users for subreddit, total in subreddit_totals.items()}
+    subreddit_stds = dict()
+    for line in chunk:
+        user, data = tuple(line.items())[0]
+        if user in users: continue
+        for subreddit in all_subs:
+            subreddit_stds[subreddit] = subreddit_stds.get(subreddit, 0) + \
+                                        (data.get(subreddit, 0)-subreddit_averages[subreddit])**2
+    subreddit_stds = {subreddit: np.sqrt(total / n_users) for subreddit, total in subreddit_stds.items()}
+    return subreddit_averages, subreddit_stds
+
+
 def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder, min_subreddits_per_user=3,
                                 min_users_in_subreddit=20):
     # with open(fpath_histogram_before, encoding='utf8') as f:
@@ -715,10 +737,10 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
             open(os.path.join(out_folder, 'labeler_sub_conspiracy.jsonl'), 'w+', encoding='utf8') as outf_ct, \
             Pool(50) as pool:
         for res in pool.imap_unordered(partial(_process_chunk,
-                                     ct=ct,
-                                     dims=dims,
-                                     min_subreddits_per_user=min_subreddits_per_user),
-                             chunkize_iter(map(json.loads, f), 10000)):
+                                               ct=ct,
+                                               dims=dims,
+                                               min_subreddits_per_user=min_subreddits_per_user),
+                                       chunkize_iter(map(json.loads, f), 10000)):
             most_frequent_subs_, outf_dims_, outf_ct_, subreddit_sums_ = res
             subreddit_sums.append(subreddit_sums_)
             most_frequent_subs.append(most_frequent_subs_)
@@ -765,13 +787,13 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
             df = df.div(df.sum(axis=1), axis=0)
             filtered_df = pd.concat((filtered_df, df.fillna(0)))
 
-    # filtered_df.fillna(0, inplace=True)
-    # most_frequent_subs = df.idxmax(axis=1)
-    # filtered_df = df.dropna(thresh=min_subreddits_per_user, axis=0).dropna(thresh=min_users_in_subreddit,
-    #                                                                        axis=1).fillna(0)
-    # filtered_df = filtered_df.div(filtered_df.sum(axis=1), axis=0)
-    highest_std_subs = filtered_df.apply(zscore).idxmax(axis=1)
-    highest_std_subs.to_csv(os.path.join(out_folder, 'labeler_highest_std_subs.csv'))
+    # # filtered_df.fillna(0, inplace=True)
+    # # most_frequent_subs = df.idxmax(axis=1)
+    # # filtered_df = df.dropna(thresh=min_subreddits_per_user, axis=0).dropna(thresh=min_users_in_subreddit,
+    # #                                                                        axis=1).fillna(0)
+    # # filtered_df = filtered_df.div(filtered_df.sum(axis=1), axis=0)
+    # highest_std_subs = filtered_df.apply(zscore).idxmax(axis=1)
+    # highest_std_subs.to_csv(os.path.join(out_folder, 'labeler_highest_std_subs.csv'))
 
     sample = filtered_df
     # Prepare initial centers - amount of initial centers defines amount of clusters from which X-Means will
