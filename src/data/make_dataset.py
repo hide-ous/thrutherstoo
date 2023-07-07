@@ -651,29 +651,62 @@ def labeler_subreddit_distribution(labeling_fpath, labeler_contributions_fpath, 
 
 
 def _process_chunk(chunk, ct, dims, min_subreddits_per_user):
-    # compute most frequent subs
-    df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()}).T
-    most_frequent_subs = df.idxmax(axis=1)
-    # compute scores for Waller+Anderson's dimensions
-    normed = df.div(df.sum(axis=1), axis=0)
-    res = normed.apply(lambda row: (row * dims.T).sum(axis=1), axis=1)
-    outf_dims = [json.dumps({n: d.to_dict()}, sort_keys=True) + '\n' for n, d in res.iterrows()]
-    # compute scores for ct
-    res = normed.apply(lambda row: (row * ct.T).sum(axis=1), axis=1)
-    outf_ct = [json.dumps({n: d.to_dict()}, sort_keys=True) + '\n' for n, d in res.iterrows()]
-    # compute users per subreddit
-    df = df[df.fillna(0).astype(bool).sum(
-        axis=1) > min_subreddits_per_user]  # discard low-freq users from the computation
-    subreddit_sums = df.fillna(0).astype(bool).sum(axis=0)
-    return most_frequent_subs, outf_dims, outf_ct, subreddit_sums
+    most_frequent_subs = dict()
+    subreddit_sums = dict()
+    outf_dims = list()
+    outf_ct = list()
+    for line in chunk:
+        user, data = tuple(line.items())[0]
+        max_count = 0
+        max_subreddit = None
+        total_count = 0
+        for subreddit, count in data.items():
+            if count > max_count:
+                max_count = count
+                max_subreddit = subreddit
+            total_count += count
+            if len(data) > min_subreddits_per_user:
+                subreddit_sums[subreddit] = subreddit_sums.get(subreddit, 0) + 1
+        most_frequent_subs[user] = max_subreddit
+        normed = {subreddit: count / total_count for subreddit, count in data.items()}
+        outf_dims.append(json.dumps({user: {dim: sum(frac * dims.loc[subreddit, dim]
+                                                     for subreddit, frac in normed.items()
+                                                     if subreddit in dims.index)
+                                            for dim in dims.columns
+                                            }},
+                                    sort_keys=True) + '\n')
+        outf_ct.append(json.dumps({user: sum(frac * ct.loc[subreddit, 'conspiracy']
+                                             for subreddit, frac in normed.items()
+                                             if subreddit in ct.index)
+                                   },
+                                  sort_keys=True) + '\n')
+    return pd.DataFrame.from_dict(most_frequent_subs, orient='index'), outf_dims, outf_ct, pd.Series(subreddit_sums)
+
+    # # compute most frequent subs
+    # df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()}).T
+    # most_frequent_subs = df.idxmax(axis=1)
+    # # compute scores for Waller+Anderson's dimensions
+    # normed = df.div(df.sum(axis=1), axis=0)
+    # res = normed.apply(lambda row: (row * dims.T).sum(axis=1), axis=1)
+    # outf_dims = [json.dumps({n: d.to_dict()}, sort_keys=True) + '\n' for n, d in res.iterrows()]
+    # # compute scores for ct
+    # res = normed.apply(lambda row: (row * ct.T).sum(axis=1), axis=1)
+    # outf_ct = [json.dumps({n: d.to_dict()}, sort_keys=True) + '\n' for n, d in res.iterrows()]
+    # # compute users per subreddit
+    # df = df[df.fillna(0).astype(bool).sum(
+    #     axis=1) > min_subreddits_per_user]  # discard low-freq users from the computation
+    # subreddit_sums = df.fillna(0).astype(bool).sum(axis=0)
+    # return most_frequent_subs, outf_dims, outf_ct, subreddit_sums
+
 
 def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder, min_subreddits_per_user=3,
                                 min_users_in_subreddit=20):
     # with open(fpath_histogram_before, encoding='utf8') as f:
     #     df = pd.DataFrame({k: v for vv in map(json.loads, f) for k, v in vv.items()}).T
     # df = pd.read_json(fpath_histogram_before, lines=True, orient='index')
-    ct = pd.read_csv(os.path.join(external_dir,'conspiracy_svd_cossim_vector.csv'), index_col=0).rename(columns={'similarity':'conspiracy'})
-    dims = pd.read_csv(os.path.join(external_dir,'scores.csv'), index_col=0)
+    ct = pd.read_csv(os.path.join(external_dir, 'conspiracy_svd_cossim_vector.csv'), index_col=0).rename(
+        columns={'similarity': 'conspiracy'})
+    dims = pd.read_csv(os.path.join(external_dir, 'scores.csv'), index_col=0)
 
     most_frequent_subs = list()
     subreddit_sums = list()
@@ -682,10 +715,10 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
             open(os.path.join(out_folder, 'labeler_sub_conspiracy.jsonl'), 'w+', encoding='utf8') as outf_ct, \
             Pool(50) as pool:
         for res in pool.imap(partial(_process_chunk,
-                                      ct=ct,
-                                      dims=dims,
-                                      min_subreddits_per_user=min_subreddits_per_user),
-                              chunkize_iter(map(json.loads, f), 10000)):
+                                     ct=ct,
+                                     dims=dims,
+                                     min_subreddits_per_user=min_subreddits_per_user),
+                             chunkize_iter(map(json.loads, f), 10000)):
             most_frequent_subs_, outf_dims_, outf_ct_, subreddit_sums_ = res
             subreddit_sums.append(subreddit_sums_)
             most_frequent_subs.append(most_frequent_subs_)
@@ -719,7 +752,8 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
     subreddit_sums = pd.concat(subreddit_sums, axis=1)
     subreddit_sums = subreddit_sums.sum(axis=1)
     remaining_subreddits = list(subreddit_sums[subreddit_sums > min_users_in_subreddit].index)
-    print(f'{len(remaining_subreddits)} subreddits have over {min_users_in_subreddit} users ({n_users} users {len(subreddit_sums)} subreddits total)')
+    print(
+        f'{len(remaining_subreddits)} subreddits have over {min_users_in_subreddit} users ({n_users} users {len(subreddit_sums)} subreddits total)')
     del subreddit_sums
 
     filtered_df = pd.DataFrame(columns=remaining_subreddits, dtype=int)
@@ -738,7 +772,6 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
     # filtered_df = filtered_df.div(filtered_df.sum(axis=1), axis=0)
     highest_std_subs = filtered_df.apply(zscore).idxmax(axis=1)
     highest_std_subs.to_csv(os.path.join(out_folder, 'labeler_highest_std_subs.csv'))
-
 
     sample = filtered_df
     # Prepare initial centers - amount of initial centers defines amount of clusters from which X-Means will
