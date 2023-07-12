@@ -699,24 +699,26 @@ def _process_chunk(chunk, ct, dims, min_subreddits_per_user):
     # return most_frequent_subs, outf_dims, outf_ct, subreddit_sums
 
 
-def subreddit_mean_and_variance(chunk, all_subs):
+def subreddit_mean_and_variance(fname, all_subs):
     subreddit_totals = dict()
     users = set()
-    for line in chunk:
-        user, data = tuple(line.items())[0]
-        if user in users: continue
-        for subreddit in all_subs:
-            subreddit_totals[subreddit] = subreddit_totals.get(subreddit, 0) + data.get(subreddit, 0)
-        users.add(user)
+    with open(fname, encoding='utf8') as f:
+        for line in map(json.loads, f):
+            user, data = tuple(line.items())[0]
+            if user in users: continue
+            for subreddit in all_subs:
+                subreddit_totals[subreddit] = subreddit_totals.get(subreddit, 0) + data.get(subreddit, 0)
+            users.add(user)
     n_users = len(users)
     subreddit_averages = {subreddit: total / n_users for subreddit, total in subreddit_totals.items()}
     subreddit_stds = dict()
-    for line in chunk:
-        user, data = tuple(line.items())[0]
-        if user in users: continue
-        for subreddit in all_subs:
-            subreddit_stds[subreddit] = subreddit_stds.get(subreddit, 0) + \
-                                        (data.get(subreddit, 0)-subreddit_averages[subreddit])**2
+    with open(fname, encoding='utf8') as f:
+        for line in map(json.loads, f):
+            user, data = tuple(line.items())[0]
+            if user in users: continue
+            for subreddit in all_subs:
+                subreddit_stds[subreddit] = subreddit_stds.get(subreddit, 0) + \
+                                            (data.get(subreddit, 0)-subreddit_averages[subreddit])**2
     subreddit_stds = {subreddit: np.sqrt(total / n_users) for subreddit, total in subreddit_stds.items()}
     return subreddit_averages, subreddit_stds
 
@@ -776,17 +778,21 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
     remaining_subreddits = list(subreddit_sums[subreddit_sums > min_users_in_subreddit].index)
     print(
         f'{len(remaining_subreddits)} subreddits have over {min_users_in_subreddit} users ({n_users} users {len(subreddit_sums)} subreddits total)')
-    del subreddit_sums
+    # del subreddit_sums
 
     filtered_df = pd.DataFrame(columns=remaining_subreddits, dtype=int)
     with open(fpath_histogram_before, encoding='utf8') as f:
         for chunk in chunkize_iter(map(json.loads, f), 10000):
-            df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()}).T
+            df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()} ,dtype=np.int).T
             df = df[[i for i in remaining_subreddits if i in df.columns]]
             df = df[df.fillna(0).astype(bool).sum(axis=1) > min_subreddits_per_user]
             df = df.div(df.sum(axis=1), axis=0)
             filtered_df = pd.concat((filtered_df, df.fillna(0)))
 
+    #zscore
+    subreddit_averages, subreddit_stds = subreddit_mean_and_variance(fpath_histogram_before, set(subreddit_sums.index))
+    filtered_df = (filtered_df - pd.Series(subreddit_averages)).div(pd.Series(subreddit_stds))
+    filtered_df.to_csv(os.path.join(out_folder, 'labeler_sub_zscores.csv'))
     # # filtered_df.fillna(0, inplace=True)
     # # most_frequent_subs = df.idxmax(axis=1)
     # # filtered_df = df.dropna(thresh=min_subreddits_per_user, axis=0).dropna(thresh=min_users_in_subreddit,
@@ -799,10 +805,10 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
     # Prepare initial centers - amount of initial centers defines amount of clusters from which X-Means will
     # start analysis.
     amount_initial_centers = 2
-    initial_centers = kmeans_plusplus_initializer(sample, amount_initial_centers).initialize()
+    initial_centers = kmeans_plusplus_initializer(sample.values, amount_initial_centers).initialize()
     # Create instance of X-Means algorithm. The algorithm will start analysis from 2 clusters, the maximum
     # number of clusters that can be allocated is 20.
-    xmeans_instance = xmeans(sample, initial_centers, 20)
+    xmeans_instance = xmeans(sample.values, initial_centers, 20)
     xmeans_instance.process()
     # Extract clustering results: clusters and their centers
     clusters = xmeans_instance.get_clusters()
