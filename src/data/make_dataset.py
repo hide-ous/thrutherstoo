@@ -780,19 +780,27 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
         f'{len(remaining_subreddits)} subreddits have over {min_users_in_subreddit} users ({n_users} users {len(subreddit_sums)} subreddits total)')
     # del subreddit_sums
 
-    filtered_df = pd.DataFrame(columns=remaining_subreddits, dtype=int)
-    with open(fpath_histogram_before, encoding='utf8') as f:
-        for chunk in chunkize_iter(map(json.loads, f), 10000):
-            df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()} ,dtype=np.int).T
-            df = df[[i for i in remaining_subreddits if i in df.columns]]
-            df = df[df.fillna(0).astype(bool).sum(axis=1) > min_subreddits_per_user]
-            df = df.div(df.sum(axis=1), axis=0)
-            filtered_df = pd.concat((filtered_df, df.fillna(0)))
+    # filtered_df = pd.DataFrame(columns=remaining_subreddits, dtype=int)
+    # with open(fpath_histogram_before, encoding='utf8') as f:
+    #     for chunk in chunkize_iter(map(json.loads, f), 10000):
+    #         df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()} ,dtype=np.int).T
+    #         df = df[[i for i in remaining_subreddits if i in df.columns]]
+    #         df = df[df.fillna(0).astype(bool).sum(axis=1) > min_subreddits_per_user]
+    #         df = df.div(df.sum(axis=1), axis=0)
+    #         filtered_df = pd.concat((filtered_df, df.fillna(0)))
 
     #zscore
     subreddit_averages, subreddit_stds = subreddit_mean_and_variance(fpath_histogram_before, set(subreddit_sums.index))
-    filtered_df = (filtered_df - pd.Series(subreddit_averages)).div(pd.Series(subreddit_stds))
-    filtered_df.to_csv(os.path.join(out_folder, 'labeler_sub_zscores.csv'))
+    with open(fpath_histogram_before, encoding='utf8') as in_f, \
+            open(fpath_histogram_before.replace('.jsonl', '_zscore.jsonl'), 'w+', encoding='utf8') as out_f, \
+            open(os.path.join(out_folder, 'labeler_highest_std_subs.csv'), 'w+', encoding='utf8') as zscore_f:
+        for line in map(json.loads, in_f):
+            author, hist = tuple(line.items())
+            zscored_hist = {k: ((v-subreddit_averages[k])/subreddit_stds[k]) for k, v in hist.items()}
+            out_f.write(json.dumps({author:zscored_hist}+'\n', sort_keys=True))
+            zscore_f.write(f"{author}, {max(zscored_hist.items(), key=lambda x: x[1])[0]}\n")
+    # filtered_df = (filtered_df - pd.Series(subreddit_averages)).div(pd.Series(subreddit_stds))
+    # filtered_df.to_csv(os.path.join(out_folder, 'labeler_sub_zscores.csv'))
     # # filtered_df.fillna(0, inplace=True)
     # # most_frequent_subs = df.idxmax(axis=1)
     # # filtered_df = df.dropna(thresh=min_subreddits_per_user, axis=0).dropna(thresh=min_users_in_subreddit,
@@ -801,14 +809,21 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
     # highest_std_subs = filtered_df.apply(zscore).idxmax(axis=1)
     # highest_std_subs.to_csv(os.path.join(out_folder, 'labeler_highest_std_subs.csv'))
 
-    sample = filtered_df
+    filtered_df = pd.DataFrame(columns=remaining_subreddits, dtype=int)
+    with open(fpath_histogram_before.replace('.jsonl', '_zscore.jsonl'), encoding='utf8') as f:
+        for chunk in chunkize_iter(map(json.loads, f), 10000):
+            df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()} ,dtype=np.int).T
+            df = df[[i for i in remaining_subreddits if i in df.columns]]
+            df = df[df.fillna(0).astype(bool).sum(axis=1) > min_subreddits_per_user]
+            df = df.div(df.sum(axis=1), axis=0)
+            filtered_df = pd.concat((filtered_df, df.fillna(0)))
     # Prepare initial centers - amount of initial centers defines amount of clusters from which X-Means will
     # start analysis.
     amount_initial_centers = 2
-    initial_centers = kmeans_plusplus_initializer(sample.values, amount_initial_centers).initialize()
+    initial_centers = kmeans_plusplus_initializer(filtered_df.values, amount_initial_centers).initialize()
     # Create instance of X-Means algorithm. The algorithm will start analysis from 2 clusters, the maximum
     # number of clusters that can be allocated is 20.
-    xmeans_instance = xmeans(sample.values, initial_centers, 20)
+    xmeans_instance = xmeans(filtered_df.values, initial_centers, 20)
     xmeans_instance.process()
     # Extract clustering results: clusters and their centers
     clusters = xmeans_instance.get_clusters()
@@ -816,9 +831,9 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
 
     cluster_assocs = dict()
     for cluster_num, cluster in enumerate(clusters):
-        cluster_assocs.update(dict(zip(sample.iloc[cluster].index, [cluster_num] * len(cluster))))
-    cluster_series = pd.Series(cluster_assocs)[sample.index]
-    center_df = pd.DataFrame(centers, columns=sample.columns)
+        cluster_assocs.update(dict(zip(filtered_df.iloc[cluster].index, [cluster_num] * len(cluster))))
+    cluster_series = pd.Series(cluster_assocs)[filtered_df.index]
+    center_df = pd.DataFrame(centers, columns=filtered_df.columns)
     cluster_series.to_csv(os.path.join(out_folder, 'labeler_clusters.csv'))
     center_df.to_csv(os.path.join(out_folder, 'labeler_cluster_centers.csv'))
 
