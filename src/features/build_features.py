@@ -661,12 +661,12 @@ def enhance_with_social_dimensions():
 
     for input_fpath in [
         # labeling_fpath,
-        sample_fpath,
-        # ct_sample_fpath,
-        # default_sample_fpath,
-        discussion_fpath,
-        discussion_ct_fpath,
-        discussion_default_fpath
+        # sample_fpath,
+        ct_sample_fpath,
+        default_sample_fpath,
+        # discussion_fpath,
+        # discussion_ct_fpath,
+        # discussion_default_fpath
     ]:
         output_fpath = os.path.join(out_dir,
                                     os.path.split(input_fpath)[-1].replace(
