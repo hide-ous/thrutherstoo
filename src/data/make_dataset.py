@@ -791,6 +791,10 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
 
     #zscore
     subreddit_averages, subreddit_stds = subreddit_mean_and_variance(fpath_histogram_before, set(subreddit_sums.index))
+    with open(os.path.join(out_folder, 'subreddit_averages.json'), 'w+', encoding='utf8') as f:
+        json.dump(f, subreddit_averages)
+    with open(os.path.join(out_folder, 'subreddit_stds.json'), 'w+', encoding='utf8') as f:
+        json.dump(f, subreddit_stds)
     with open(fpath_histogram_before, encoding='utf8') as in_f, \
             open(fpath_histogram_before.replace('.jsonl', '_zscore.jsonl'), 'w+', encoding='utf8') as out_f, \
             open(os.path.join(out_folder, 'labeler_highest_std_subs.csv'), 'w+', encoding='utf8') as zscore_f:
