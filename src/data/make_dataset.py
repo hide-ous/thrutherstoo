@@ -795,7 +795,7 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
             open(fpath_histogram_before.replace('.jsonl', '_zscore.jsonl'), 'w+', encoding='utf8') as out_f, \
             open(os.path.join(out_folder, 'labeler_highest_std_subs.csv'), 'w+', encoding='utf8') as zscore_f:
         for line in map(json.loads, in_f):
-            author, hist = tuple(line.items())
+            author, hist = tuple(line.items())[0]
             zscored_hist = {k: ((v-subreddit_averages[k])/subreddit_stds[k]) for k, v in hist.items()}
             out_f.write(json.dumps({author:zscored_hist}+'\n', sort_keys=True))
             zscore_f.write(f"{author}, {max(zscored_hist.items(), key=lambda x: x[1])[0]}\n")
