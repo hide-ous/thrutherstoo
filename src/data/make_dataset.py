@@ -780,7 +780,7 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
             author, hist = tuple(line.items())[0]
             zscored_hist = {k: ((v-subreddit_averages[k])/subreddit_stds[k]) for k, v in hist.items()
                             if (k in subreddit_averages) and (k in subreddit_stds)}
-            out_f.write(json.dumps({author:zscored_hist}+'\n', sort_keys=True))
+            out_f.write(json.dumps({author:zscored_hist}, sort_keys=True)+'\n')
             zscore_f.write(f"{author}, {max(zscored_hist.items(), key=lambda x: x[1])[0]}\n")
 
     filtered_df = pd.DataFrame(columns=remaining_subreddits, dtype=int)
