@@ -86,6 +86,7 @@ def read_zst(fpath):
                 print(e)
 
 
+
 def main_(args):
     return main(*args)
 
@@ -915,8 +916,26 @@ if __name__ == '__main__':
     #     fpath_histogram_before=os.path.join(interim_dir, 'labeler_histograms_before.jsonl'),
     #     fpath_histogram_after=os.path.join(interim_dir, 'labeler_histograms_after.jsonl'), )
 
-    assign_labeler_to_subreddit(external_dir=external_dir,
-                                fpath_histogram_before=os.path.join(interim_dir, 'labeler_histograms_before.jsonl'),
-                                out_folder=interim_dir,
-                                min_subreddits_per_user=3,
-                                min_users_in_subreddit=20)
+    # assign_labeler_to_subreddit(external_dir=external_dir,
+    #                             fpath_histogram_before=os.path.join(interim_dir, 'labeler_histograms_before.jsonl'),
+    #                             out_folder=interim_dir,
+    #                             min_subreddits_per_user=3,
+    #                             min_users_in_subreddit=20)
+    labeled_suffix = '_labeled.jsonl'
+
+    filtered_authors_fpath = os.path.join(interim_dir, 'labeled_contributions_nobots.jsonl')
+    collect_authors(input_fpath=filtered_authors_fpath,
+                    bot_fpath=os.path.join(raw_dir, 'botnames_expanded.txt'),
+                    output_dir=interim_dir,
+                    output_suffix=labeled_suffix)
+    labeled_fpath = os.path.join(project_dir, 'data', 'interim',
+                                f'labeled_all.jsonl')
+    consolidate_files(interim_dir,
+                      labeled_fpath,
+                      file_suffix=labeled_suffix)
+
+    labeler_subreddit_distribution(
+        labeling_fpath=os.path.join(interim_dir, "labeled_contributions_nobots.jsonl"),
+        labeler_contributions_fpath=os.path.join(interim_dir, 'labeled_all.jsonl'),
+        fpath_histogram_before=os.path.join(interim_dir, 'labeled_histograms_before.jsonl'),
+        fpath_histogram_after=os.path.join(interim_dir, 'labeled_histograms_after.jsonl'), )
