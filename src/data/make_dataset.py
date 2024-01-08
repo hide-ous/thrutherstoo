@@ -26,6 +26,7 @@ from pyclustering.cluster import cluster_visualizer
 from pyclustering.cluster.xmeans import xmeans
 from pyclustering.cluster.center_initializer import kmeans_plusplus_initializer
 from src.data.collect_reddit import search_pushshift
+from src.features.perspective import parse_summary_scores
 from src.utils import chunkize_iter
 
 CONSPIRACY_THEORIST_RE = '(conspiracist)|(conspiracy theorist)'
@@ -84,7 +85,6 @@ def read_zst(fpath):
             except JSONDecodeError as e:
                 print(f"error in {fpath}")
                 print(e)
-
 
 
 def main_(args):
@@ -719,7 +719,7 @@ def subreddit_mean_and_variance(fname, all_subs):
             if user in users: continue
             for subreddit in all_subs:
                 subreddit_stds[subreddit] = subreddit_stds.get(subreddit, 0) + \
-                                            (data.get(subreddit, 0)-subreddit_averages[subreddit])**2
+                                            (data.get(subreddit, 0) - subreddit_averages[subreddit]) ** 2
     subreddit_stds = {subreddit: np.sqrt(total / n_users) for subreddit, total in subreddit_stds.items()}
     return subreddit_averages, subreddit_stds
 
@@ -760,7 +760,7 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
     print(
         f'{len(remaining_subreddits)} subreddits have over {min_users_in_subreddit} users ({n_users} users {len(subreddit_sums)} subreddits total)')
 
-    #zscore
+    # zscore
     subreddit_averages, subreddit_stds = (None, None)
     if os.path.exists(os.path.join(out_folder, 'subreddit_averages.json')):
         with open(os.path.join(out_folder, 'subreddit_averages.json')) as f:
@@ -769,7 +769,8 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
         with open(os.path.join(out_folder, 'subreddit_stds.json')) as f:
             subreddit_stds = json.load(f)
     if (subreddit_averages is None) or (subreddit_stds is None):
-        subreddit_averages, subreddit_stds = subreddit_mean_and_variance(fpath_histogram_before, set(subreddit_sums.index))
+        subreddit_averages, subreddit_stds = subreddit_mean_and_variance(fpath_histogram_before,
+                                                                         set(subreddit_sums.index))
         with open(os.path.join(out_folder, 'subreddit_averages.json'), 'w+', encoding='utf8') as f:
             json.dump(subreddit_averages, f)
         with open(os.path.join(out_folder, 'subreddit_stds.json'), 'w+', encoding='utf8') as f:
@@ -779,15 +780,15 @@ def assign_labeler_to_subreddit(external_dir, fpath_histogram_before, out_folder
             open(os.path.join(out_folder, 'labeler_highest_std_subs.csv'), 'w+', encoding='utf8') as zscore_f:
         for line in map(json.loads, in_f):
             author, hist = tuple(line.items())[0]
-            zscored_hist = {k: ((v-subreddit_averages[k])/subreddit_stds[k]) for k, v in hist.items()
+            zscored_hist = {k: ((v - subreddit_averages[k]) / subreddit_stds[k]) for k, v in hist.items()
                             if (k in subreddit_averages) and (k in subreddit_stds)}
-            out_f.write(json.dumps({author:zscored_hist}, sort_keys=True)+'\n')
+            out_f.write(json.dumps({author: zscored_hist}, sort_keys=True) + '\n')
             zscore_f.write(f"{author}, {max(zscored_hist.items(), key=lambda x: x[1])[0]}\n")
 
     filtered_df = pd.DataFrame(columns=remaining_subreddits, dtype=int)
     with open(fpath_histogram_before.replace('.jsonl', '_zscore.jsonl'), encoding='utf8') as f:
         for chunk in chunkize_iter(map(json.loads, f), 10000):
-            df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()} ,dtype=np.int).T
+            df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()}, dtype=np.int).T
             df = df[[i for i in remaining_subreddits if i in df.columns]]
             df = df[df.fillna(0).astype(bool).sum(axis=1) > min_subreddits_per_user]
             df = df.div(df.sum(axis=1), axis=0)
@@ -849,7 +850,7 @@ def assign_labeled_to_subreddit(external_dir, fpath_histogram_before, out_folder
     print(
         f'{len(remaining_subreddits)} subreddits have over {min_users_in_subreddit} users ({n_users} users {len(subreddit_sums)} subreddits total)')
 
-    #zscore
+    # zscore
     subreddit_averages, subreddit_stds = (None, None)
     if os.path.exists(os.path.join(out_folder, 'subreddit_averages_labeled.json')):
         with open(os.path.join(out_folder, 'subreddit_averages_labeled.json')) as f:
@@ -858,7 +859,8 @@ def assign_labeled_to_subreddit(external_dir, fpath_histogram_before, out_folder
         with open(os.path.join(out_folder, 'subreddit_stds_labeled.json')) as f:
             subreddit_stds = json.load(f)
     if (subreddit_averages is None) or (subreddit_stds is None):
-        subreddit_averages, subreddit_stds = subreddit_mean_and_variance(fpath_histogram_before, set(subreddit_sums.index))
+        subreddit_averages, subreddit_stds = subreddit_mean_and_variance(fpath_histogram_before,
+                                                                         set(subreddit_sums.index))
         with open(os.path.join(out_folder, 'subreddit_averages_labeled.json'), 'w+', encoding='utf8') as f:
             json.dump(subreddit_averages, f)
         with open(os.path.join(out_folder, 'subreddit_stds_labeled.json'), 'w+', encoding='utf8') as f:
@@ -868,15 +870,15 @@ def assign_labeled_to_subreddit(external_dir, fpath_histogram_before, out_folder
             open(os.path.join(out_folder, 'labeled_highest_std_subs.csv'), 'w+', encoding='utf8') as zscore_f:
         for line in map(json.loads, in_f):
             author, hist = tuple(line.items())[0]
-            zscored_hist = {k: ((v-subreddit_averages[k])/subreddit_stds[k]) for k, v in hist.items()
+            zscored_hist = {k: ((v - subreddit_averages[k]) / subreddit_stds[k]) for k, v in hist.items()
                             if (k in subreddit_averages) and (k in subreddit_stds)}
-            out_f.write(json.dumps({author:zscored_hist}, sort_keys=True)+'\n')
+            out_f.write(json.dumps({author: zscored_hist}, sort_keys=True) + '\n')
             zscore_f.write(f"{author}, {max(zscored_hist.items(), key=lambda x: x[1])[0]}\n")
 
     filtered_df = pd.DataFrame(columns=remaining_subreddits, dtype=int)
     with open(fpath_histogram_before.replace('.jsonl', '_zscore.jsonl'), encoding='utf8') as f:
         for chunk in chunkize_iter(map(json.loads, f), 10000):
-            df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()} ,dtype=np.int).T
+            df = pd.DataFrame({k: v for vv in chunk for k, v in vv.items()}, dtype=np.int).T
             df = df[[i for i in remaining_subreddits if i in df.columns]]
             df = df[df.fillna(0).astype(bool).sum(axis=1) > min_subreddits_per_user]
             df = df.div(df.sum(axis=1), axis=0)
@@ -900,6 +902,65 @@ def assign_labeled_to_subreddit(external_dir, fpath_histogram_before, out_folder
     center_df = pd.DataFrame(centers, columns=filtered_df.columns)
     cluster_series.to_csv(os.path.join(out_folder, 'labeled_clusters.csv'))
     center_df.to_csv(os.path.join(out_folder, 'labeled_cluster_centers.csv'))
+
+
+def compute_subreddit_means_stds(interim_dir, sample_size=10000):
+    logger = logging.getLogger()
+    with open(os.path.join(interim_dir, f'sample_contributions_{sample_size}_preprocessed.jsonl'), encoding='utf8') as f:
+        contribution_subreddits = defaultdict(lambda: np.nan,
+            {k['fullname']: k['subreddit'] for k in map(json.loads, f) if 'subreddit' in k})
+
+        # contribution_subreddits = pd.Series({k['fullname']: k['subreddit'] for k in map(json.loads, f) if 'subreddit' in k}, name='subreddit')
+
+    for feat in ['perspective', 'liwc', 'social_dimensions']:
+
+        logger.info(f'processing {feat}')
+        if feat == 'social_dimensions':
+            with open(
+                    os.path.join(interim_dir, feat, f'sample_contributions_{sample_size}_preprocessed_social_dimensions.jsonl'),
+                    encoding='utf8') as f:
+                social_dimensions = dict()
+                for obj in map(json.loads, f):
+                    social_dimensions.update(obj)
+            df = pd.DataFrame(social_dimensions).T
+            del social_dimensions
+        elif feat == 'perspective':
+            with open(os.path.join(interim_dir, feat, f'sample_contributions_{sample_size}_preprocessed_perspective.jsonl'),
+                      encoding='utf8') as f:
+                perspectives = dict()
+                for obj in map(json.loads, f):
+                    k, v = list(obj.items())[0]
+                    perspectives[k] = parse_summary_scores(v)
+            df = pd.DataFrame(perspectives).T
+            del perspectives
+        elif feat == 'liwc':
+
+            with open(os.path.join(interim_dir, feat, f'sample_contributions_{sample_size}_preprocessed_liwc.jsonl'), encoding='utf8') as f:
+                liwcs = dict()
+                for obj in map(json.loads, f):
+                    liwcs.update(obj)
+            df = pd.DataFrame(liwcs).T
+            df = df.divide(df.Tokens, axis=0)
+            del df['Tokens'], liwcs
+
+        # df = pd.read_json(os.path.join(interim_dir, feat, f'sample_contributions_{k}_preprocessed_{feat}.jsonl'),
+        #                   orient='records', nrows=100, lines=True)
+        print(df.head())
+        df['subreddit'] = pd.Series(contribution_subreddits)
+        print(df.head())
+        df.dropna(subset=['subreddit'], inplace=True)
+        print(df.head())
+        # df.set_index('fullname', inplace=True)
+        grouped = df.groupby('subreddit')
+        means = grouped.mean().reset_index()
+        means.to_json(
+            os.path.join(interim_dir, feat, f'sample_contributions_{sample_size}_preprocessed_{feat}_subreddit_means.jsonl'),
+            orient='records', lines=True)
+        stds = grouped.std().reset_index()
+        stds.to_json(
+            os.path.join(interim_dir, feat, f'sample_contributions_{sample_size}_preprocessed_{feat}_subreddit_stds.jsonl'),
+            orient='records', lines=True)
+
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -1028,8 +1089,10 @@ if __name__ == '__main__':
     #     fpath_histogram_before=os.path.join(interim_dir, 'labeled_histograms_before.jsonl'),
     #     fpath_histogram_after=os.path.join(interim_dir, 'labeled_histograms_after.jsonl'), )
 
-    assign_labeled_to_subreddit(external_dir=external_dir,
-                                fpath_histogram_before=os.path.join(interim_dir, 'labeled_histograms_before.jsonl'),
-                                out_folder=interim_dir,
-                                min_subreddits_per_user=3,
-                                min_users_in_subreddit=20)
+    # assign_labeled_to_subreddit(external_dir=external_dir,
+    #                             fpath_histogram_before=os.path.join(interim_dir, 'labeled_histograms_before.jsonl'),
+    #                             out_folder=interim_dir,
+    #                             min_subreddits_per_user=3,
+    #                             min_users_in_subreddit=20)
+
+    compute_subreddit_means_stds(interim_dir)
