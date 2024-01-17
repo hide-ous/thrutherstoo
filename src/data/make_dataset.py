@@ -597,6 +597,30 @@ def compute_baseline_volume(out_folder):
         pool.map(partial(compute_baseline_volume_, out_folder=out_folder), fpaths)
 
 
+def compute_baseline_volume_per_subreddit_(in_fpath, out_folder='counts'):
+    logger = logging.getLogger()
+    in_fname = os.path.basename(in_fpath)
+    out_fpath = os.path.join(out_folder, in_fname.replace('.zst', '_subreddit_counts.json'))
+    os.makedirs(os.path.dirname(out_fpath), exist_ok=True)
+
+    cntrs_subreddit = defaultdict(Counter)
+    logger.info(f'processing {in_fname}')
+    for contribution in read_zst(in_fpath):
+        timestamp = contribution.get('created_utc', None)
+        contribution_subreddit = contribution.get('subreddit', None)
+        if (timestamp is not None) and (contribution_subreddit is not None):
+            timestamp = datetime.datetime.fromtimestamp(float(timestamp))
+            truncated_timestamp = time.mktime(timestamp.date().timetuple())
+            cntrs_subreddit[contribution_subreddit][truncated_timestamp] += 1
+
+    logger.info(f'writing to {out_fpath}')
+    with open(out_fpath, 'w+') as f:
+        f.write(json.dumps(cntrs_subreddit, sort_keys=True))
+
+def compute_baseline_volume_per_subreddit(out_folder):
+    fpaths = get_contribution_fpaths()
+    with Pool(40) as pool:
+        pool.map(partial(compute_baseline_volume_per_subreddit_, out_folder=out_folder), fpaths)
 def consolidate_baseline_volume(in_folder):
     all_counts = Counter()
     ct_counts = Counter()
@@ -1095,4 +1119,6 @@ if __name__ == '__main__':
     #                             min_subreddits_per_user=3,
     #                             min_users_in_subreddit=20)
 
-    compute_subreddit_means_stds(interim_dir)
+    # compute_subreddit_means_stds(interim_dir)
+    out_folder = os.path.join(interim_dir, 'counts')
+    compute_baseline_volume_per_subreddit(out_folder=out_folder)
