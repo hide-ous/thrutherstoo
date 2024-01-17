@@ -621,6 +621,19 @@ def compute_baseline_volume_per_subreddit(out_folder):
     fpaths = get_contribution_fpaths()
     with Pool(40) as pool:
         pool.map(partial(compute_baseline_volume_per_subreddit_, out_folder=out_folder), fpaths)
+
+def consolidate_baseline_volume_per_subreddit(in_folder):
+    cntrs_subreddit = defaultdict(Counter)
+    for fname in filter(lambda x: x.startswith('RC') or x.startswith('RS') and x.endswith('_subreddit_counts.json'),
+                        os.listdir(in_folder)):
+        fpath = os.path.join(in_folder, fname)
+        with open(fpath) as f:
+            cnts = json.load(f)
+            for k, v in cnts.items():
+                cntrs_subreddit[k] += v
+    with open(os.path.join(in_folder, 'subreddit_counts.json'), 'w+') as f:
+        json.dump(cntrs_subreddit, f)
+
 def consolidate_baseline_volume(in_folder):
     all_counts = Counter()
     ct_counts = Counter()
@@ -1120,5 +1133,7 @@ if __name__ == '__main__':
     #                             min_users_in_subreddit=20)
 
     # compute_subreddit_means_stds(interim_dir)
+
     out_folder = os.path.join(interim_dir, 'counts')
-    compute_baseline_volume_per_subreddit(out_folder=out_folder)
+    # compute_baseline_volume_per_subreddit(out_folder=out_folder)
+    consolidate_baseline_volume_per_subreddit(in_folder=out_folder)
