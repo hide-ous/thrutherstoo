@@ -624,7 +624,7 @@ def compute_baseline_volume_per_subreddit(out_folder):
 
 def consolidate_baseline_volume_per_subreddit(in_folder):
     cntrs_subreddit = defaultdict(Counter)
-    for fname in filter(lambda x: x.startswith('RC') or x.startswith('RS') and x.endswith('_subreddit_counts.json'),
+    for fname in filter(lambda x: (x.startswith('RC') or x.startswith('RS')) and x.endswith('_subreddit_counts.json'),
                         os.listdir(in_folder)):
         fpath = os.path.join(in_folder, fname)
         with open(fpath) as f:
