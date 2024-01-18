@@ -5,6 +5,7 @@ import time
 import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
+from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE, Isomap
 
 from src.features.gensim_word2vec_procrustes_align import load_embeddings
@@ -19,18 +20,19 @@ def get_cmap(n, name='YlGn'):
     return plt.cm.get_cmap(name, n + CMAP_MIN)
 
 
-def fit_tsne(values):
+def fit_tsne(values, to_transform):
     if not values:
         return
 
     start = time.time()
     mat = np.array(values)
-    model = TSNE(n_components=2, random_state=0, learning_rate=150, init='random')
+    # model = TSNE(n_components=2, random_state=0, learning_rate=150, init='random')
     # model = TSNE(n_components=2, random_state=0, learning_rate=150, init='pca')
-    # model = Isomap(n_components=2)
-    # fitted = model.fit(mat).transform(to_transform)
+    model = Isomap(n_components=2)
+    # model=PCA(n_components=2)
+    fitted = model.fit(mat).transform(to_transform)
 
-    fitted = model.fit_transform(mat)
+    # fitted = model.fit_transform(mat)
     print("FIT TSNE TOOK %s" % (time.time() - start))
 
     return fitted
@@ -78,9 +80,9 @@ def plot_historical_neighbors(word1, min_sim=.3, n_neighbors=15,
     dirname = os.path.split(embedding_dir)[-1]
 
     words = lookups.keys()
-    # values = [lookups[word] for word in words if not word.startswith(word1)]
+    values = [lookups[word] for word in words if not word.startswith(word1)]
     to_transform = [lookups[word] for word in words]
-    fitted = fit_tsne(to_transform)
+    fitted = fit_tsne(values, to_transform)
     if (fitted is None) or (not len(fitted)):
         print("Couldn't model word", word1)
         return
@@ -135,8 +137,8 @@ def plot_annotations(annotations):
     prev = annotations[0][-1]
     for ww, decade, ann in annotations[1:]:
         plt.annotate('', xy=prev, xytext=ann,
-                     arrowprops=dict(facecolor='blue', shrink=0.1, alpha=0.3,
-                                     width=2, headwidth=15))
+                     arrowprops=dict(facecolor='gray', shrink=0.05, alpha=0.3, #arrowstyle='fancy',
+                                     width=1, headwidth=3))
         # print(prev, ann)
         prev = ann
 
@@ -152,15 +154,15 @@ if __name__ == '__main__':
     for dirname in os.listdir(aligned_embedding_dir):
         for term in {'conspiracist', 'conspiracy_theorist', 'conspiracy'}:
             print(dirname, term)
-            blacklisted_words = {'conspiracy', 'theory', 'conspiracist', 'conspiracy_theorist', 'theorist'}
+            blacklisted_words = {'conspiracy', 'theory', 'conspiracist', 'conspiracy_theorist', 'theorist', 'conspriacist', 'conspiratorial', 'subredditconspiracy', 'subredditrconspiracy', 'reddit', 'conspiricy'}
             blacklisted_words.remove(term)
             plot_historical_neighbors(term,
                                       n_neighbors=5,
                                       embedding_dir=os.path.join(aligned_embedding_dir, dirname),
                                       blacklisted_words=blacklisted_words)
-        for term in {'trump', 'sanders'}:
-            print(dirname, term)
-            plot_historical_neighbors(term,
-                                      n_neighbors=10,
-                                      embedding_dir=os.path.join(aligned_embedding_dir, dirname),
-                                      blacklisted_words={})
+        # for term in {'trump', 'sanders'}:
+        #     print(dirname, term)
+        #     plot_historical_neighbors(term,
+        #                               n_neighbors=10,
+        #                               embedding_dir=os.path.join(aligned_embedding_dir, dirname),
+        #                               blacklisted_words={})

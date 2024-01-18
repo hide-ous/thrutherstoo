@@ -630,6 +630,7 @@ def consolidate_baseline_volume_per_subreddit(in_folder):
         with open(fpath) as f:
             cnts = json.load(f)
             for k, v in cnts.items():
+                print(k, v)
                 cntrs_subreddit[k] += v
     with open(os.path.join(in_folder, 'subreddit_counts.json'), 'w+') as f:
         json.dump(cntrs_subreddit, f)
