@@ -31,6 +31,7 @@ def fit_tsne(values, to_transform):
     model = Isomap(n_components=2)
     # model=PCA(n_components=2)
     fitted = model.fit(mat).transform(to_transform)
+    # fitted = model.fit(mat).transform(to_transform)
 
     # fitted = model.fit_transform(mat)
     print("FIT TSNE TOOK %s" % (time.time() - start))
@@ -81,6 +82,7 @@ def plot_historical_neighbors(word1, min_sim=.3, n_neighbors=15,
 
     words = lookups.keys()
     values = [lookups[word] for word in words if not word.startswith(word1)]
+    # values = [lookups[word] for word in words if  word.startswith(word1)]
     to_transform = [lookups[word] for word in words]
     fitted = fit_tsne(values, to_transform)
     if (fitted is None) or (not len(fitted)):
@@ -161,7 +163,7 @@ if __name__ == '__main__':
                                       embedding_dir=os.path.join(aligned_embedding_dir, dirname),
                                       blacklisted_words=blacklisted_words)
         # for term in {'trump', 'sanders'}:
-        #     print(dirname, term)
+        #     print(dirname , term)
         #     plot_historical_neighbors(term,
         #                               n_neighbors=10,
         #                               embedding_dir=os.path.join(aligned_embedding_dir, dirname),

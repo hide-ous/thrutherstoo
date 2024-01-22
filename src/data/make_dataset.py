@@ -1076,6 +1076,22 @@ if __name__ == '__main__':
     #                    subreddit_subsets={'default': DEFAULT_SUBREDDITS})
     # subsample_further(interim_dir)
 
+    ct = pd.read_csv(os.path.join(external_dir, 'conspiracy_svd_cossim_vector.csv'), index_col=0).rename(
+        columns={'similarity': 'conspiracy'})
+    dims = pd.read_csv(os.path.join(external_dir, 'scores.csv'), index_col=0)
+
+    dims = dims[['age', 'affluence', 'gender', 'partisan', 'partisan neutral', 'gender neutral']]  # 'gender neutral', 'partisan neutral'
+    dims = pd.merge(dims, ct, left_index=True, right_index=True, how='outer')
+    dims = dims.apply(lambda x: pd.qcut(x, 10, labels=False), axis=0)
+    top_bottom_communities = {col: {'top': dims[dims[col] == 9].index.values,
+                                    'bottom': dims[dims[col] == 0].index.values, } for col in dims.columns}
+    top_bottom_communities = {f'{k}_{kk}': set(top_bottom_communities[k][kk]) for k in top_bottom_communities for kk in
+                              ['top', 'bottom']}
+
+    divide_discussions(os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"),
+                       subreddit_subsets=top_bottom_communities)
+
+
     # extract_thread_structure(
     #     labeling_fpath=os.path.join(interim_dir, 'labeling_contributions_preprocessed_no_bot.jsonl'),
     #     discussions_fpath=os.path.join(interim_dir, "labeling_discussions_all_filtered_preprocessed_no_bot.jsonl"),
@@ -1135,6 +1151,6 @@ if __name__ == '__main__':
 
     # compute_subreddit_means_stds(interim_dir)
 
-    out_folder = os.path.join(interim_dir, 'counts')
+    # out_folder = os.path.join(interim_dir, 'counts')
     # compute_baseline_volume_per_subreddit(out_folder=out_folder)
-    consolidate_baseline_volume_per_subreddit(in_folder=out_folder)
+    # consolidate_baseline_volume_per_subreddit(in_folder=out_folder)
